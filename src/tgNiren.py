@@ -3,12 +3,12 @@
 
 import os
 import sys
-import utils.yml
+import utils.json
 from tgkream.tgTool import TgLoginTool
 
 
 _dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-_env = utils.yml.load(_dirname + '/env.yml')
+_env = utils.json.loadYml(_dirname + '/env.yml')
 
 
 def main():
