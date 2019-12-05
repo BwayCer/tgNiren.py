@@ -1,0 +1,122 @@
+# 區別用中間名縮寫:
+#   B, C, D, E, G,
+#   H, J, L, P, S,
+#   T, R, W,
+# 隨意的姓及名:
+[
+  # A
+  Ada, Aaliyah, Aditi, Adela, Adelaide,
+  Adele, Adora, Afra, Agatha, Agnes,
+  Alani, Alberta, Alice, Alma, Althea,
+  Alva, Alexandra, Alisa, Alison, Alyssa,
+  Amanda, Amelia, Amity, Anila, Amy,
+  Andrea, Angela, Ann, Anna, Annabelle,
+  Antonia, Apphia, April, Arabela, Arlene,
+  Ashley, Astrid, Atalanta, Athena, Audrey,
+  Aurora, Ava,
+  # B
+  Barbara, Basia, Bblythe, Beatrice, Belen,
+  Bella, Belle, Belinda, Bernice, Bertha,
+  Beryl, Bess, Betsy, Betty, Beulah,
+  Beverly, Blanche, Bonnie, Breenda, Brianna,
+  Bridget, Brook,
+  # C
+  Calista, Camille, Candice, Candance, Carol,
+  Cara, Caroline, Carlin, Caitlin, Catherine,
+  Cathy, Cecilia, Celeste, Charlotte, Chaya,
+  Cheryl, Cherry, Cheryl, Chloe, Christine,
+  Clara, Claire, Clara, Clementine, Constance,
+  Cora, Coral, Cornelia, Crystal, Cynthia,
+  # D
+  Daisy, Dale, Dana, Damla, Daphne,
+  Darlene, Dawn, Debby, Deborah, Deirdre,
+  Delia, Denise, Destiny, Diana, Dinah,
+  Dolores, Dominic, Donna, Doreen, Dora,
+  Doris, Dorothy,
+  # E
+  Eartha, Eden, Edith, Edwina, Eileen,
+  Elaine, Eleanore, Elizabeth, Ella, Ellen,
+  Elma, Elsa, Elsie, Elvira, Elva,
+  Emily, Emma, Enid, Erin, Erica,
+  Esther, Ethel, Eudora, Eunice, Evangeline,
+  Eve, Evelyn,
+  # F
+  Faithe, Faith, Fanny, Fay, Flora,
+  Florence, Frances, Freda, Frederica,
+  # G
+  Gabrielle, Gail, Gemma, Genevieve, Georgia,
+  Geraldine, Gill, Gina, Giselle, Gladys,
+  Gloria, Grace, Griselda, Gustave, Gwendolyn,
+  # H
+  Hannah, Harriet, Hazel, Heather, Hedda,
+  Hedwig, Hedy, Helen, Heloise, Hermosa,
+  Hilda, Hilary, Honey, Hulda,
+  # I
+  Ida, Ina, Ingrid, Irene, Iris,
+  Irma, Isabel, Ivy,
+  # J
+  Jacqueline, Jade, Jamie, Jane, Janet,
+  Janice, Jean, Jennifer, Jenny, Jessie,
+  Jessica, Jill, Jo, Joa, Joanna,
+  Joanne, Jocelyn, Jodie, Jolie, Josephine,
+  Joy, Joyce, Judith, Judy, Julia,
+  Julie, Juliet, June,
+  # K
+  Kama, Karen, Kate, Katherine, Kay,
+  Kelly, Kimberley, Kitty, Kristin,
+  # L
+  Lara, Laura, Laurel, Lauren, Lee,
+  Leila, Lena, Leona, Lesley, Letitia,
+  Lila, Lilith, Lillian, Linda, Lindsay,
+  Lisa, Liz, Lola, Lorraine, Louise,
+  Lucy, Lyuba, Lydia, Lynn,
+  # M
+  Mabel, Madge, Madeline, Maggie, Mamie,
+  Mandy, Marcia, Margaret, Marguerite, Maria,
+  Marina, Marian, Marjorie, Martina, Martha,
+  Mary, Maud, Maureen, Mavis, Maxine,
+  Mag, May, Megan, Melissa, Meroy,
+  Meredith, Merry, Michelle, Michaelia, Mignon,
+  Mildred, Miranda, Mirabelle, Miriam, Modesty,
+  Moira, Molly, Mona, Monica, Muriel,
+  Murray, Myra, Myrna,
+  # N
+  Nancy, Naomi, Natalie, Natividad, Nelly,
+  Nicole, Nicola, Nina, Nora, Norma,
+  Novia, Nydia,
+  # O
+  Octavia, Odelia, Odelette, Olga, Olive,
+  Olivia, Ophelia,
+  Pag, Page, Pamela, Pandora, Patricia,
+  Paula, Pearl, Penny, Penelope, Philipppa,
+  Phoebe, Phoenix, Phyllis, Polly, Poppy,
+  Prima, Priscilla, Prudence,
+  # Q
+  Queena, Quanna, Quintina,
+  # R
+  Rachel, Rae, Rebecca, Regina, Renee,
+  Renata, Rita, Riva, Roberta, Rose,
+  Rosalind, Rosemary, Roxanne, Ruby, Ruth,
+  # S
+  Sabina, Sabrina, Sally, Salome, Samantha,
+  Sandra, Sandy, Sara, Sarah, Sebastiane,
+  Selena, Sharon, Sherry, Sheila, Shirley,
+  Sibyl, Sigrid, Simona, Sophia, Spring,
+  Stacey, Setlla, Stephanie, Susan, Susie,
+  Susanna, Suzanne, Sylvia,
+  # T
+  Tara, Tabitha, Tammy, Teresa, Tess,
+  Thera, Theresa, Tiffany, Tina, Tobey,
+  Tracy, Trista, Truda,
+  # U
+  Ula, Una, Ursula,
+  # V
+  Valerie, Vanessa, Venus, Vera, Verna,
+  Vicky, Victoria, Viola, Violet, Virginia,
+  Vivien,
+  # W
+  Wallis, Wanda, Wendy, Winni, Winifred,
+  Xanthe, Xaviera, Xenia, Xylia,
+  Yedda, Yetta, Yuri, Yvette, Yvonne
+  Zara, Zenobia, Zoe, Zona, Zanna, Zora
+]
