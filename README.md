@@ -20,3 +20,13 @@ cp ./src/env.example.yml ./src/env.yml
 pipenv run ./src/tgNiren.py
 ```
 
+
+
+## 小工具
+
+
+```
+# 查看命令
+./src/otherTool.py --router
+```
+
