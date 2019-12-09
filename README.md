@@ -17,6 +17,8 @@ pipenv install
 cp ./src/env.example.yml ./src/env.yml
 # edit ./src/env.yml
 
+docker run -d -p 6379:6379 redislabs/rejson:latest
+
 pipenv run ./src/tgNiren.py
 ```
 
