@@ -8,7 +8,7 @@ import yaml
 __all__ = ['load', 'loadYml', 'dump']
 
 
-def load(filePath: str = None):
+def load(filePath: str):
     with open(filePath, 'r', encoding = 'utf-8') as fs:
         dataTxt = fs.read()
     data = json.loads(dataTxt)
