@@ -7,6 +7,7 @@ import re
 _dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 _origArgs = sys.argv
 _pyTool = {
+    'login': 'toolBox/base/login',
     'adTool.sendAdPhoto': 'toolBox/adTool/sendAdPhoto',
     'adTool.tuckUserIntoChannel': 'toolBox/adTool/tuckUserIntoChannel',
 }
