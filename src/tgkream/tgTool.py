@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 
 
-from typing import Union
+import typing
 import os
 import datetime
 import random
 import re
 import asyncio
-from telethon.sync import TelegramClient
+import telethon.sync as telethon
 import utils.chanData
 import utils.novice
 
 
 __all__ = ['TgLoginTool']
+
+
+TelegramClient = telethon.TelegramClient
 
 
 class _NiUsersPhoneChoose():
@@ -48,9 +51,8 @@ class _NiUsersPhoneChoose():
         for idx in range(bandInfosLength):
             bandInfo = bandInfos[idx]
             if bandInfo['bannedWaitTimeMs'] < nowTimeMs:
-                bandsIdx = utils.novice.indexOf(bands, bandInfo['id'])
                 del bandInfos[idx]
-                del bands[bandsIdx]
+                bands.remove(bandInfo['id'])
 
         return niUsers
 
@@ -207,14 +209,14 @@ class TgLoginTool():
             'client': client,
         })
 
-    def _lookforClientInfo(self, idCode: int) -> Union[TelegramClient, None]:
+    def _lookforClientInfo(self, idCode: int) -> typing.Union[TelegramClient, None]:
         clientInfoList = self._clientInfoList
         for clientInfo in clientInfoList:
             if clientInfo['id'] == idCode or clientInfo['userId'] == idCode:
                 return clientInfo
         return None
 
-    def lookforClient(self, idCode: int) -> Union[TelegramClient, None]:
+    def lookforClient(self, idCode: int) -> typing.Union[TelegramClient, None]:
         clientInfo = self._lookforClientInfo(idCode)
         if clientInfo != None:
             return clientInfo['client']
