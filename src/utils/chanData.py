@@ -49,6 +49,8 @@ class ChanData():
                 return data
 
             def newFn(*args) -> bool:
+                global _ysUpdate
+
                 times = 0
                 while True:
                     originData = _getSafe(memberPath)
@@ -71,7 +73,10 @@ class ChanData():
         return realDecorator
 
     def store(self):
+        global _ysUpdate
+
         if _ysUpdate:
+            _ysUpdate = False
             rootData = _rjdb.jsonget(_redisKey, rejson.Path.rootPath())
             utils.json.dump(rootData, _chanDataFilePath)
 
