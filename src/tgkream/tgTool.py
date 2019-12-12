@@ -104,7 +104,7 @@ class _NiUsersPhoneChoose():
 
     def pushCemeteryData(self, phoneNumber: str, err: Exception) -> bool:
         sessionPath = self.getSessionPath(phoneNumber)
-        if not os.path.exists(sessionPath):
+        if os.path.exists(sessionPath):
             os.remove(sessionPath)
             self._pushCemeteryData_chanData(phoneNumber)
             return self.chanData.opt('jsonarrappend', '.niUsers.cemetery', {
