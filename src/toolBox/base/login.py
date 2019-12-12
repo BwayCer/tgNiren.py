@@ -47,7 +47,13 @@ def run(args: list, _dirpy: str, _dirname: str):
             try:
                 client.send_code_request(phoneNumber)
             except telethon.errors.rpcerrorlist.PhoneNumberInvalidError as err:
-                print('The phone number {} is invalid '.format(phoneNumber))
+                print('The phone number +{} is invalid '.format(phoneNumber))
+                continue
+            except telethon.errors.rpcerrorlist.PhoneNumberBannedError as err:
+                errMsg = 'The used phone number +{}'
+                errMsg += ' has been banned from Telegram and cannot be used anymore.'
+                errMsg += ' Maybe check https://www.telegram.org/faq_spam'
+                print(errMsg.format(phoneNumber))
                 continue
 
             while True:
