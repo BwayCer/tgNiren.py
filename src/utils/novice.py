@@ -7,6 +7,10 @@ import time
 import datetime
 
 
+# 異常退出時執行
+#   @dOnExit
+#   def onExit():
+#       print('異常退出')
 def dOnExit(fn) -> None:
     atexit.register(fn)
 

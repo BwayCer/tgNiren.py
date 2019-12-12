@@ -181,6 +181,11 @@ class TgNiUsers():
         self.ysUsablePapaClient = papaPhone != 0
         self._papaPhone = papaPhone
 
+        # 異常退出時執行
+        @utils.novice.dOnExit
+        def onExit():
+            self.release()
+
     async def init(self) -> None:
         clientCount = self._clientCountLimit
         niUsersPhoneChoose = self.niUsersPhoneChoose
@@ -330,7 +335,6 @@ class TgNiUsers():
                 break
 
     def release(self, *args):
+        self._clientInfoList.clear()
         self.niUsersPhoneChoose.unlockPhones(*args)
-
-    # TODO 好像不用 stop
 

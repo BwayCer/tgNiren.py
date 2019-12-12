@@ -21,11 +21,6 @@ async def main():
         clientCountLimit = 1,
         papaPhone = _env['papaPhoneNumber']
     )
-
-    @utils.novice.dOnExit
-    def onExit():
-        tgTool.release()
-
     await tgTool.init()
 
     client = await tgTool.pickClient()
