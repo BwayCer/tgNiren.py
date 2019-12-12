@@ -26,6 +26,8 @@ async def main():
     def onExit():
         tgTool.release()
 
+    await tgTool.init()
+
     client = await tgTool.pickClient()
     print(await client.get_me())
 

@@ -26,9 +26,9 @@ class _NiUsersPhoneChoose():
         if not os.path.exists(sessionDirPath):
             os.makedirs(sessionDirPath)
 
-        self._chanData = utils.chanData.ChanData()
-        if self._chanData.getSafe('.niUsers') == None:
-            self._chanData.set('.niUsers', {
+        self.chanData = utils.chanData.ChanData()
+        if self.chanData.getSafe('.niUsers') == None:
+            self.chanData.set('.niUsers', {
                 'cemetery': [],
                 'bandInfos': [],
                 'bandList': [],
@@ -42,7 +42,7 @@ class _NiUsersPhoneChoose():
 
     @utils.chanData.ChanData.dFakeLockSet(memberPath = '.niUsers', ysStore = True)
     def updateBandInfo(self) -> dict:
-        niUsers = self._chanData.get('.niUsers')
+        niUsers = self.chanData.get('.niUsers')
 
         bandInfos = niUsers['bandInfos']
         bandInfosLength = len(bandInfos)
@@ -61,7 +61,7 @@ class _NiUsersPhoneChoose():
 
     _regexSessionName = r'^telethon-(\d+).session$'
 
-    def _getUsablePhones(self) -> list:
+    def getUsablePhones(self) -> list:
         phones = []
         files = os.listdir(self._sessionDirPath)
         for fileName in files:
@@ -81,7 +81,7 @@ class _NiUsersPhoneChoose():
 
     @utils.chanData.ChanData.dFakeLockSet(memberPath = '.niUsers', ysStore = True)
     def _pushCemeteryData_chanData(self, phoneNumber: str) -> list:
-        niUsers = self._chanData.get('.niUsers')
+        niUsers = self.chanData.get('.niUsers')
 
         locks = niUsers['lockList']
         locksIdx = utils.novice.indexOf(locks, phoneNumber)
@@ -107,17 +107,18 @@ class _NiUsersPhoneChoose():
         if not os.path.exists(sessionPath):
             os.remove(sessionPath)
             self._pushCemeteryData_chanData(phoneNumber)
-            return self._chanData.opt('jsonarrappend', '.niUsers.cemetery', {
+            return self.chanData.opt('jsonarrappend', '.niUsers.cemetery', {
                 'id': phoneNumber,
                 'message': '{} error: {}'.format(type(err), err),
             })
+        self.chanData.store()
         return False
 
     def pushBandData(self, phoneNumber: str, dt: datetime.datetime) -> bool:
-        bands = self._chanData.get('.niUsers.bandList')
+        bands = self.chanData.get('.niUsers.bandList')
         if utils.novice.indexOf(bands, phoneNumber) == -1:
-            self._chanData.opt('jsonarrappend', '.niUsers.bandList', phoneNumber)
-            return self._chanData.opt('jsonarrappend', '.niUsers.bandInfos', {
+            self.chanData.opt('jsonarrappend', '.niUsers.bandList', phoneNumber)
+            return self.chanData.opt('jsonarrappend', '.niUsers.bandInfos', {
                 'id': phoneNumber,
                 'bannedWaitDate': utils.novice.dateStringify(dt),
                 'bannedWaitTimeMs': utils.novice.dateTimestamp(dt)
@@ -129,7 +130,7 @@ class _NiUsersPhoneChoose():
         return lockList
 
     def lockPhone(self, phoneNumber: str) -> bool:
-        locks = self._chanData.get('.niUsers.lockList')
+        locks = self.chanData.get('.niUsers.lockList')
         if utils.novice.indexOf(locks, phoneNumber) == -1:
             locks.append(phoneNumber)
             if self._lockPhone_chanData(locks):
@@ -137,48 +138,28 @@ class _NiUsersPhoneChoose():
                 return True
         return False
 
-    async def pickPhone(self) -> str:
-        phones = self._getUsablePhones()
-        phonesLength = len(phones)
-        # 避免頻繁使用同一帳號
-        times = random.randrange(0, phonesLength)
-        while True:
-            times += 1
-            phoneNumber = phones[times % phonesLength]
-
-            niUsers = self._chanData.get('.niUsers')
-            bands = niUsers['bandList']
-            locks = niUsers['lockList']
-
-            if utils.novice.indexOf(bands, phoneNumber) != -1 \
-                    or utils.novice.indexOf(locks, phoneNumber) != -1:
-                continue
-
-            if self.lockPhone(phoneNumber):
-                return phoneNumber
-
-            await asyncio.sleep(1)
-
     @utils.chanData.ChanData.dFakeLockSet(memberPath = '.niUsers.lockList')
-    def _releaseLockPhone_chanData(self, lockPhoneList: list) -> list:
-        locks = self._chanData.get('.niUsers.lockList')
+    def _unlockPhones_chanData(self, lockPhoneList: list) -> list:
+        locks = self.chanData.get('.niUsers.lockList')
         for phoneNumber in lockPhoneList:
             phoneIdx = utils.novice.indexOf(locks, phoneNumber)
             if phoneIdx != -1:
                 del locks[phoneIdx]
         return locks
 
-    def releaseLockPhone(self, phoneNumber: str = ''):
+    def unlockPhones(self, *args):
         pickPhones = self.pickPhones
-        if phoneNumber == '':
-            self._releaseLockPhone_chanData(pickPhones)
+        if len(args) == 0:
+            self._unlockPhones_chanData(pickPhones)
             pickPhones.clear()
         else:
-            self._releaseLockPhone_chanData([phoneNumber])
-            phoneIdx = utils.novice.indexOf(pickPhones, phoneNumber)
-            if phoneIdx != -1:
-                del pickPhones[phoneIdx]
-        self._chanData.store()
+            unlockPhones = args[0]
+            self._unlockPhones_chanData(unlockPhones)
+            for phoneNumber in unlockPhones:
+                phoneIdx = utils.novice.indexOf(pickPhones, phoneNumber)
+                if phoneIdx != -1:
+                    del pickPhones[phoneIdx]
+        self.chanData.store()
 
 class TgNiUsers():
     def __init__(self,
@@ -187,49 +168,114 @@ class TgNiUsers():
             sessionDirPath: str,
             clientCountLimit: int = 0,
             papaPhone: str = 0):
+
         self._apiId = apiId
         self._apiHash = apiHash
-        self._clientCountLimit = clientCountLimit if clientCountLimit > 0 else 3
-        self._pickClientIdx = 0
+        self._pickClientIdx = -1
         self._clientInfoList = []
 
+        self._clientCountLimit = clientCountLimit if clientCountLimit > 0 else 3
         self.niUsersPhoneChoose = _NiUsersPhoneChoose(sessionDirPath, papaPhone)
-        # TODO
-        # 處理仿用戶不足問題，尤其在 `iterPickClient` 方法中更為明顯。
-        # 預先提取仿用戶門號，等到夠用時才繼續運行程式
 
         # 父親帳戶 仿用戶的頭子
         self.ysUsablePapaClient = papaPhone != 0
         self._papaPhone = papaPhone
 
+    async def init(self) -> None:
+        clientCount = self._clientCountLimit
+        niUsersPhoneChoose = self.niUsersPhoneChoose
+
+        # 30 * 6 sec ~= 3 min
+        for idxLoop in range(60):
+            if idxLoop >= 30:
+                raise errors.PickPhoneMoreTimes(errors.errMsg.PickPhoneMoreTimes)
+
+            if idxLoop % 3 == 0:
+                usablePhones = niUsersPhoneChoose.getUsablePhones()
+
+            niUsers = niUsersPhoneChoose.chanData.get('.niUsers')
+            bands = niUsers['bandList']
+            locks = niUsers['lockList']
+
+            if len(usablePhones) - len(bands) - len(locks) < clientCount:
+                await asyncio.sleep(6)
+                continue
+
+            pickClients = await self._init_loginAll(usablePhones, bands, locks, clientCount)
+            if pickClients == None:
+                await asyncio.sleep(1)
+                continue
+
+            await self._init_register(pickClients)
+            break
+
+    async def _init_loginAll(self,
+            usablePhones: list,
+            bandPhones: list,
+            lockPhones: list,
+            clientCount: int) -> typing.Union[None, typing.List[TelegramClient]]:
+        niUsersPhoneChoose = self.niUsersPhoneChoose
+
+        pickPhones = []
+        pickClients = []
+
+        usablePhonesLength = len(usablePhones)
+        # 避免頻繁使用同一帳號
+        indexStart = random.randrange(0, usablePhonesLength)
+        for idx in range(indexStart, usablePhonesLength + indexStart):
+            phoneNumber = usablePhones[idx % usablePhonesLength]
+
+            if utils.novice.indexOf(bandPhones, phoneNumber) != -1 \
+                    or utils.novice.indexOf(lockPhones, phoneNumber) != -1:
+                continue
+
+            if niUsersPhoneChoose.lockPhone(phoneNumber):
+                client = await self._login(phoneNumber)
+                if client != None:
+                    pickPhones.append(phoneNumber)
+                    pickClients.append(client)
+                    if len(pickClients) == clientCount:
+                        return pickClients
+
+        niUsersPhoneChoose.unlockPhones(pickPhones)
+        for client in pickClients:
+            await client.disconnect()
+        return None
+
+    async def _init_register(self, clientList: list) -> None:
+        for client in clientList:
+            meInfo = await client.get_me()
+            self._clientInfoList.append({
+                'id': meInfo.phone,
+                'userId': meInfo.id,
+                'client': client,
+            })
+
     # if phoneNumber == '+8869xxx', input '8869xxx' (str)
-    async def _login(self, phoneNumber: str = '') -> TelegramClient:
-        sessionPath = self.niUsersPhoneChoose.getSessionPath(phoneNumber)
-        sessionPathPart = self.niUsersPhoneChoose.getSessionPath(
-            phoneNumber,
-            noExt = True
-        )
+    async def _login(self, phoneNumber: str) -> typing.Union[None, TelegramClient]:
+        niUsersPhoneChoose = self.niUsersPhoneChoose
+        sessionPath = niUsersPhoneChoose.getSessionPath(phoneNumber)
 
         if not os.path.exists(sessionPath):
             raise errors.UserNotAuthorized(errors.errMsg.UserNotAuthorized)
 
         client = TelegramClient(
-            self.niUsersPhoneChoose.getSessionPath(phoneNumber, noExt = True),
+            niUsersPhoneChoose.getSessionPath(phoneNumber, noExt = True),
             self._apiId,
             self._apiHash
         )
-        await client.connect()
+        try:
+            await client.connect()
+        # except tele.errors.PhoneNumberBannedError as err:
+            # print('rm telethon-{}.*'.format(phoneNumber))
+        except Exception as err:
+            print('{} error: {}', type(err), err)
+            raise err
 
         if not await client.is_user_authorized():
-            raise errors.UserNotAuthorized(errors.errMsg.UserNotAuthorized)
-
-        if phoneNumber != self._papaPhone:
-            meInfo = await client.get_me()
-            self._clientInfoList.append({
-                'id': phoneNumber,
-                'userId': meInfo.id,
-                'client': client,
-            })
+            err = errors.UserNotAuthorized(errors.errMsg.UserNotAuthorized)
+            niUsersPhoneChoose.pushCemeteryData(phoneNumber, err)
+            return None
 
         return client
 
@@ -252,58 +298,39 @@ class TgNiUsers():
             if self.niUsersPhoneChoose.lockPhone(papaPhone):
                 client = await self._login(papaPhone)
                 yield client
+                await client.disconnect()
                 break
 
             await asyncio.sleep(1)
 
-        self.niUsersPhoneChoose.releaseLockPhone(papaPhone)
+        self.niUsersPhoneChoose.unlockPhones([papaPhone])
 
     async def pickClient(self) -> TelegramClient:
         clientInfoList = self._clientInfoList
-        clientInfoListLength = len(clientInfoList)
-        if clientInfoListLength < self._clientCountLimit:
-            phoneNumber = await self.niUsersPhoneChoose.pickPhone()
-            client = await self._login(phoneNumber)
-            return client
-
-        pickIdx = self._pickClientIdx % clientInfoListLength
-        self._pickClientIdx = pickIdx + 1
+        self._pickClientIdx += 1
+        pickIdx = self._pickClientIdx % len(clientInfoList)
         return clientInfoList[pickIdx]['client']
 
-    async def iterPickClient(self, loopLimit: int = 1) -> TelegramClient:
-        if loopLimit == 0: return
+    async def iterPickClient(self, circleLimit: int = 1) -> TelegramClient:
+        if not (circleLimit == -1 or 0 < circleLimit):
+            return
 
-        clientCountLimit = self._clientCountLimit
         clientInfoList = self._clientInfoList
         clientInfoListLength = len(clientInfoList)
-        loopTimes = 0
+        maxLoopTimes = clientInfoListLength * circleLimit if circleLimit != -1 else -1
 
-        # 若當前擁有的仿用戶數量不足則需補充
-        if clientInfoListLength < clientCountLimit:
-            for idx in range(clientInfoListLength):
-                yield clientInfoList[idx]['client']
-            for idx in range(clientInfoListLength, clientCountLimit):
-                phoneNumber = await self.niUsersPhoneChoose.pickPhone()
-                await asyncio.sleep(1)
-                client = await self._login(phoneNumber)
-                yield client
-
-            if loopLimit == 1:
-                return
-            loopTimes = clientCountLimit
-
-        clientInfoListLength = len(clientInfoList)
-        maxLoopTimes = clientInfoListLength * loopLimit
+        idxLoop = 0
         while True:
-            idx = loopTimes % clientInfoListLength
-            yield clientInfoList[idx]['client']
-            if loopLimit != -1:
-                loopTimes += 1
-                if loopTimes >= maxLoopTimes:
-                    break
+            pickIdx = idxLoop % clientInfoListLength
+            client = clientInfoList[pickIdx]['client']
+            yield client
+
+            idxLoop += 1
+            if 0 < maxLoopTimes and maxLoopTimes <= idxLoop:
+                break
 
     def release(self, *args):
-        self.niUsersPhoneChoose.releaseLockPhone(*args)
+        self.niUsersPhoneChoose.unlockPhones(*args)
 
     # TODO 好像不用 stop
 
