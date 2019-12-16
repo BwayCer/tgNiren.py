@@ -336,6 +336,14 @@ class _TgNiUsers():
 
         return client
 
+    def release(self, *args):
+        self._clientInfoList.clear()
+        self.chanDataNiUsers.unlockPhones(*args)
+
+    async def reinit(self):
+        self.release()
+        await self.init()
+
     def lookforClientInfo(self,
             idCode: typing.Union[str, int]) -> typing.Union[TelegramClient, None]:
         clientInfoList = self._clientInfoList
@@ -368,7 +376,9 @@ class _TgNiUsers():
         pickIdx = self._pickClientIdx % len(clientInfoList)
         return clientInfoList[pickIdx]['client']
 
-    async def iterPickClient(self, circleLimit: int = 1) -> TelegramClient:
+    async def iterPickClient(self,
+            circleLimit: int = 1,
+            circleInterval: float = 1) -> TelegramClient:
         if not (circleLimit == -1 or 0 < circleLimit):
             return
 
@@ -376,9 +386,21 @@ class _TgNiUsers():
         clientInfoListLength = len(clientInfoList)
         maxLoopTimes = clientInfoListLength * circleLimit if circleLimit != -1 else -1
 
+        prevTimeMs = utils.novice.dateNowTimestamp()
         idxLoop = 0
         while True:
             pickIdx = idxLoop % clientInfoListLength
+
+            if circleInterval > 0 and idxLoop != 0 and pickIdx == 0:
+                nowTimeMs = utils.novice.dateNowTimestamp()
+                intervalTimeMs = circleInterval - ((nowTimeMs - prevTimeMs) / 1000)
+                if intervalTimeMs > 0:
+                    print('wait {} second'.format(intervalTimeMs))
+                    await asyncio.sleep(intervalTimeMs)
+                    prevTimeMs = utils.novice.dateNowTimestamp()
+                else:
+                    prevTimeMs = nowTimeMs
+
             client = clientInfoList[pickIdx]['client']
             yield client
 
@@ -386,9 +408,6 @@ class _TgNiUsers():
             if 0 < maxLoopTimes and maxLoopTimes <= idxLoop:
                 break
 
-    def release(self, *args):
-        self._clientInfoList.clear()
-        self.niUsersPhoneChoose.unlockPhones(*args)
 
 class TgBaseTool(_TgNiUsers):
     def __init__(self,
