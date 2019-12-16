@@ -6,7 +6,9 @@ import re
 
 _dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 _origArgs = sys.argv
-_pyTool = {}
+_pyTool = {
+    'adTool.sendAdPhoto': 'toolBox/adTool/sendAdPhoto',
+}
 
 if len(_origArgs) == 1:
     raise Exception('[tool]: Not found command.')

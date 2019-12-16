@@ -23,6 +23,17 @@ pipenv run ./src/tgNiren.py
 ```
 
 
+**小工具：**
+
+```
+# 圖片訊息廣告
+#   { forwardPeerList: ["someChannelName"[, ...]],   # 轉傳的對象清單
+#     url: "./path/to/some.jpg",
+#     msg: "文字訊息" }
+pipenv run ./src/tool.py adTool.sendAdPhoto "{\"forwardPeerList\":[\"someChannelName\"],\"url\":\"./path/to/some.jpg\",\"msg\":\"文字訊息\"}"
+```
+
+
 
 ## 小工具
 

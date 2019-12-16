@@ -425,3 +425,19 @@ class TgBaseTool(_TgNiUsers):
         )
         self.chanData = _TgChanData()
 
+    def getRandId(self):
+        return random.randrange(1000000, 9999999)
+
+    def joinGroup(self, client: TelegramClient, groupCode: str) -> telethon.types.Updates:
+        # TODO 檢查是否已經入群
+        # 透過 `functions.messages.GetDialogsRequest` 請求來達成 ?
+        # 但即便已經入群 `functions.channels.JoinChannelRequest` 請求也能成功執行
+        return client(telethon.functions.channels.JoinChannelRequest(
+            channel = groupCode
+        ))
+
+    def leaveGroup(self, client: TelegramClient, groupCode: str) -> telethon.types.Updates:
+        return client(telethon.functions.channels.LeaveChannelRequest(
+            channel = groupCode
+        ))
+
