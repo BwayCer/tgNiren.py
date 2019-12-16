@@ -14,7 +14,7 @@ import utils.novice
 import tgkream.errors as errors
 
 
-__all__ = ['TgNiUsers', 'TgBaseTool']
+__all__ = ['TgBaseTool']
 
 
 TelegramClient = telethon.TelegramClient
@@ -211,14 +211,16 @@ class _TgChanData(utils.chanData.ChanData):
         return blackGuy
 
 
-class TgNiUsers():
-    def __init__(self,
+class _TgNiUsers():
+    def __init__(self, *args):
+        self._initTgNiUsers(*args)
+
+    def _initTgNiUsers(self,
             apiId: str,
             apiHash: str,
             sessionDirPath: str,
             clientCountLimit: int = 3,
-            papaPhone: str = ''):
-
+            papaPhone: str = '') -> None:
         self._apiId = apiId
         self._apiHash = apiHash
         self._pickClientIdx = -1
@@ -387,4 +389,20 @@ class TgNiUsers():
     def release(self, *args):
         self._clientInfoList.clear()
         self.niUsersPhoneChoose.unlockPhones(*args)
+
+class TgBaseTool(_TgNiUsers):
+    def __init__(self,
+            apiId: str,
+            apiHash: str,
+            sessionDirPath: str,
+            clientCountLimit: int = 3,
+            papaPhone: str = 0):
+        self._initTgNiUsers(
+            apiId = apiId,
+            apiHash = apiHash,
+            sessionDirPath = sessionDirPath,
+            clientCountLimit = clientCountLimit,
+            papaPhone = papaPhone
+        )
+        self.chanData = _TgChanData()
 
