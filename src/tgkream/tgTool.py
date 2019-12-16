@@ -20,7 +20,7 @@ __all__ = ['TgNiUsers']
 TelegramClient = telethon.TelegramClient
 
 
-class _NiUsersPhoneChoose():
+class _TgChanData_NiUsers():
     def __init__(self, sessionDirPath: str = '', papaPhone: str = 0):
         self._sessionDirPath = sessionDirPath
         if not os.path.exists(sessionDirPath):
@@ -109,7 +109,7 @@ class _NiUsersPhoneChoose():
             self._pushCemeteryData_chanData(phoneNumber)
             return self.chanData.opt('jsonarrappend', '.niUsers.cemetery', {
                 'id': phoneNumber,
-                'message': '{} error: {}'.format(type(err), err),
+                'message': '{} Error: {}'.format(type(err), err),
             })
         self.chanData.store()
         return False
@@ -175,7 +175,7 @@ class TgNiUsers():
         self._clientInfoList = []
 
         self._clientCountLimit = clientCountLimit if clientCountLimit > 0 else 3
-        self.niUsersPhoneChoose = _NiUsersPhoneChoose(sessionDirPath, papaPhone)
+        self.chanDataNiUsers = _TgChanData_NiUsers(sessionDirPath, papaPhone)
 
         # 父親帳戶 仿用戶的頭子
         self.ysUsablePapaClient = papaPhone != 0
@@ -188,7 +188,7 @@ class TgNiUsers():
 
     async def init(self) -> None:
         clientCount = self._clientCountLimit
-        niUsersPhoneChoose = self.niUsersPhoneChoose
+        chanDataNiUsers = self.chanDataNiUsers
 
         # 30 * 6 sec ~= 3 min
         for idxLoop in range(60):
@@ -196,9 +196,9 @@ class TgNiUsers():
                 raise errors.PickPhoneMoreTimes(errors.errMsg.PickPhoneMoreTimes)
 
             if idxLoop % 3 == 0:
-                usablePhones = niUsersPhoneChoose.getUsablePhones()
+                usablePhones = chanDataNiUsers.getUsablePhones()
 
-            niUsers = niUsersPhoneChoose.chanData.get('.niUsers')
+            niUsers = chanDataNiUsers.chanData.get('.niUsers')
             bands = niUsers['bandList']
             locks = niUsers['lockList']
 
@@ -219,7 +219,7 @@ class TgNiUsers():
             bandPhones: list,
             lockPhones: list,
             clientCount: int) -> typing.Union[None, typing.List[TelegramClient]]:
-        niUsersPhoneChoose = self.niUsersPhoneChoose
+        chanDataNiUsers = self.chanDataNiUsers
 
         pickPhones = []
         pickClients = []
@@ -234,7 +234,7 @@ class TgNiUsers():
                     or utils.novice.indexOf(lockPhones, phoneNumber) != -1:
                 continue
 
-            if niUsersPhoneChoose.lockPhone(phoneNumber):
+            if chanDataNiUsers.lockPhone(phoneNumber):
                 client = await self._login(phoneNumber)
                 if client != None:
                     pickPhones.append(phoneNumber)
@@ -242,7 +242,7 @@ class TgNiUsers():
                     if len(pickClients) == clientCount:
                         return pickClients
 
-        niUsersPhoneChoose.unlockPhones(pickPhones)
+        chanDataNiUsers.unlockPhones(pickPhones)
         for client in pickClients:
             await client.disconnect()
         return None
@@ -258,14 +258,14 @@ class TgNiUsers():
 
     # if phoneNumber == '+8869xxx', input '8869xxx' (str)
     async def _login(self, phoneNumber: str) -> typing.Union[None, TelegramClient]:
-        niUsersPhoneChoose = self.niUsersPhoneChoose
-        sessionPath = niUsersPhoneChoose.getSessionPath(phoneNumber)
+        chanDataNiUsers = self.chanDataNiUsers
+        sessionPath = chanDataNiUsers.getSessionPath(phoneNumber)
 
         if not os.path.exists(sessionPath):
             raise errors.UserNotAuthorized(errors.errMsg.UserNotAuthorized)
 
         client = TelegramClient(
-            niUsersPhoneChoose.getSessionPath(phoneNumber, noExt = True),
+            chanDataNiUsers.getSessionPath(phoneNumber, noExt = True),
             self._apiId,
             self._apiHash
         )
@@ -274,12 +274,12 @@ class TgNiUsers():
         # except tele.errors.PhoneNumberBannedError as err:
             # print('rm telethon-{}.*'.format(phoneNumber))
         except Exception as err:
-            print('{} error: {}', type(err), err)
+            print('{} Error: {}', type(err), err)
             raise err
 
         if not await client.is_user_authorized():
             err = errors.UserNotAuthorized(errors.errMsg.UserNotAuthorized)
-            niUsersPhoneChoose.pushCemeteryData(phoneNumber, err)
+            chanDataNiUsers.pushCemeteryData(phoneNumber, err)
             return None
 
         return client
@@ -300,7 +300,7 @@ class TgNiUsers():
         papaPhone = self._papaPhone
 
         while True:
-            if self.niUsersPhoneChoose.lockPhone(papaPhone):
+            if self.chanDataNiUsers.lockPhone(papaPhone):
                 client = await self._login(papaPhone)
                 yield client
                 await client.disconnect()
@@ -308,7 +308,7 @@ class TgNiUsers():
 
             await asyncio.sleep(1)
 
-        self.niUsersPhoneChoose.unlockPhones([papaPhone])
+        self.chanDataNiUsers.unlockPhones([papaPhone])
 
     async def pickClient(self) -> TelegramClient:
         clientInfoList = self._clientInfoList
