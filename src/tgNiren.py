@@ -3,25 +3,31 @@
 
 import os
 import sys
+import asyncio
 import utils.json
-from tgkream.tgTool import TgLoginTool
+import utils.novice
+from tgkream.tgTool import TgNiUsers
 
 
 _dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 _env = utils.json.loadYml(_dirname + '/env.yml')
 
 
-def main():
-    tgTool = TgLoginTool(
+async def main():
+    tgTool = TgNiUsers(
         _env['apiId'],
         _env['apiHash'],
-        _dirname + '/_tgSession/telethon-'
+        sessionDirPath = _dirname + '/_tgSession',
+        clientCountLimit = 1,
+        papaPhone = _env['papaPhoneNumber']
     )
-    for phoneNumber in _env['allPhoneNumber']:
-        tgTool.login(phoneNumber)
+    await tgTool.init()
+
+    client = await tgTool.pickClient()
+    print(await client.get_me())
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
     os._exit(0)
 
