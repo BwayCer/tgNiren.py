@@ -14,10 +14,22 @@ import utils.novice
 import tgkream.errors as errors
 
 
-__all__ = ['TgNiUsers']
+__all__ = ['TgNiUsers', 'TgBaseTool']
 
 
 TelegramClient = telethon.TelegramClient
+
+
+class TgTypeing():
+    InputPeer = typing.Union[
+        telethon.types.InputPeerEmpty,
+        telethon.types.InputPeerSelf,
+        telethon.types.InputPeerChat,
+        telethon.types.InputPeerUser,
+        telethon.types.InputPeerChannel,
+        telethon.types.InputPeerUserFromMessage,
+        telethon.types.InputPeerChannelFromMessage,
+    ]
 
 
 class _TgChanData_NiUsers():
@@ -160,6 +172,44 @@ class _TgChanData_NiUsers():
                 if phoneIdx != -1:
                     del pickPhones[phoneIdx]
         self.chanData.store()
+
+class _TgChanData(utils.chanData.ChanData):
+    def __init__(self):
+        if self.getSafe('.blackGuy') == None:
+            self.set('.blackGuy', {
+                'infos': [],
+                'list': [],
+            })
+            self.set('.log', [])
+
+    @utils.chanData.ChanData.dFakeLockSet(memberPath = '.blackGuy', ysStore = True)
+    def pushLog(self, txt: str) -> None:
+        logNote = self.get('.log')
+        logNote.append('Date: {}; Txt: {}'.format(
+            utils.novice.dateStringify(utils.novice.dateNow()),
+            txt
+        ))
+
+    @utils.chanData.ChanData.dFakeLockSet(memberPath = '.blackGuy', ysStore = True)
+    def pushGuy(self, peer: TgTypeing.InputPeer, err: Exception) -> dict:
+        blackGuy = self.get('.blackGuy')
+        blackGuyInfos = blackGuy['infos']
+        blackGuyList = blackGuy['list']
+
+        userId = peer.id
+        if utils.novice.indexOf(blackGuyList, userId) == -1:
+            blackGuyList.append(userId)
+            username = peer.username
+            if username != '':
+                blackGuyList.append(username)
+            blackGuyInfos.append({
+                'userId': peer.id,
+                'username': username,
+                'message': '{} Error: {}'.format(type(err), err),
+            })
+
+        return blackGuy
+
 
 class TgNiUsers():
     def __init__(self,
