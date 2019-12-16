@@ -21,7 +21,7 @@ TelegramClient = telethon.TelegramClient
 
 
 class _TgChanData_NiUsers():
-    def __init__(self, sessionDirPath: str = '', papaPhone: str = 0):
+    def __init__(self, sessionDirPath: str = '', papaPhone: str = ''):
         self._sessionDirPath = sessionDirPath
         if not os.path.exists(sessionDirPath):
             os.makedirs(sessionDirPath)
@@ -166,8 +166,8 @@ class TgNiUsers():
             apiId: str,
             apiHash: str,
             sessionDirPath: str,
-            clientCountLimit: int = 0,
-            papaPhone: str = 0):
+            clientCountLimit: int = 3,
+            papaPhone: str = ''):
 
         self._apiId = apiId
         self._apiHash = apiHash
@@ -178,7 +178,7 @@ class TgNiUsers():
         self.chanDataNiUsers = _TgChanData_NiUsers(sessionDirPath, papaPhone)
 
         # 父親帳戶 仿用戶的頭子
-        self.ysUsablePapaClient = papaPhone != 0
+        self.ysUsablePapaClient = papaPhone != ''
         self._papaPhone = papaPhone
 
         # 異常退出時執行
