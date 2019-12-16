@@ -22,7 +22,7 @@ def indexOf(target: typing.Union[str, list], index, *args) -> int:
         return -1
 
 
-def dateTimestamp(dt: datetime.datetime) -> float:
+def dateTimestamp(dt: datetime.datetime) -> int:
     # 不管是 UTC 或者本地時間所返回的毫秒數都是相對本地時間的毫秒數
     # datetime.datetime.now(datetime.timezone.utc).timestamp()
     # datetime.datetime.now().timestamp()
@@ -35,4 +35,10 @@ def dateStringify(dt: datetime.datetime) -> str:
     dtstamp = dtMs / 1000
     return datetime.datetime.fromtimestamp(dtstamp).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     # return datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).isoformat()
+
+def dateNow() -> datetime.datetime:
+    return datetime.datetime.now()
+
+def dateNowTimestamp() -> int:
+    return dateTimestamp(dateNow())
 

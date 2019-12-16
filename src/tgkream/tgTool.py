@@ -50,7 +50,7 @@ class _NiUsersPhoneChoose():
             return niUsers
 
         bands = niUsers['bandList']
-        nowTimeMs = utils.novice.dateTimestamp(datetime.datetime.now())
+        nowTimeMs = utils.novice.dateNowTimestamp()
         for idx in range(bandInfosLength):
             bandInfo = bandInfos[idx]
             if bandInfo['bannedWaitTimeMs'] < nowTimeMs:
