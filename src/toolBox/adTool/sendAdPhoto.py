@@ -6,9 +6,8 @@ import os
 import datetime
 import json
 import asyncio
-import utils.chanData
+import utils.novice
 import utils.json
-from tgkream.tgAdTool import TgAdTool
 from tgkream.tgTool import TgBaseTool, telethon
 
 
@@ -33,8 +32,6 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         papaPhone = _env['papaPhoneNumber']
     )
     await tgTool.init()
-
-    chanData = utils.chanData.ChanData()
 
     messageId = await _sendFile(tgTool, mainGroup, url, msg)
 
@@ -75,6 +72,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             tgTool.chanData.pushGuy(forwardPeer, err)
         except Exception as err:
             print('{} Error: {} (target group: {})'.format(type(err), err, forwardPeer))
+
 
 async def _sendFile(tgTool: TgBaseTool, group: str, url: str, msg: str = '') -> int:
     async with tgTool.usePapaClient() as client:
