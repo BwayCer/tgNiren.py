@@ -30,6 +30,8 @@ class TgTypeing():
         telethon.types.InputPeerUserFromMessage,
         telethon.types.InputPeerChannelFromMessage,
     ]
+    # Telethon 的 "peer" 欄位能自動判斷 (調用 `get_input_entity()` 方法)
+    AutoInputPeer = typing.Union[str, InputPeer]
 
 
 class _TgChanData_NiUsers():
@@ -292,10 +294,10 @@ class _TgNiUsers():
 
     async def _init_register(self, clientList: list) -> None:
         for client in clientList:
-            meInfo = await client.get_me()
+            myInfo = await client.get_me()
             self._clientInfoList.append({
-                'id': meInfo.phone,
-                'userId': meInfo.id,
+                'id': myInfo.phone,
+                'userId': myInfo.id,
                 'client': client,
             })
 
@@ -419,16 +421,20 @@ class TgBaseTool(_TgNiUsers):
     def getRandId(self):
         return random.randrange(1000000, 9999999)
 
-    def joinGroup(self, client: TelegramClient, groupCode: str) -> telethon.types.Updates:
+    def joinGroup(self,
+            client: TelegramClient,
+            groupPeer: TgTypeing.AutoInputPeer) -> telethon.types.Updates:
         # TODO 檢查是否已經入群
         # 透過 `functions.messages.GetDialogsRequest` 請求來達成 ?
         # 但即便已經入群 `functions.channels.JoinChannelRequest` 請求也能成功執行
         return client(telethon.functions.channels.JoinChannelRequest(
-            channel = groupCode
+            channel = groupPeer
         ))
 
-    def leaveGroup(self, client: TelegramClient, groupCode: str) -> telethon.types.Updates:
+    def leaveGroup(self,
+            client: TelegramClient,
+            groupPeer: TgTypeing.AutoInputPeer) -> telethon.types.Updates:
         return client(telethon.functions.channels.LeaveChannelRequest(
-            channel = groupCode
+            channel = groupPeer
         ))
 
