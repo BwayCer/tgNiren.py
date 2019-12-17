@@ -31,6 +31,9 @@ pipenv run ./src/tgNiren.py
 #     url: "./path/to/some.jpg",
 #     msg: "文字訊息" }
 pipenv run ./src/tool.py adTool.sendAdPhoto "{\"forwardPeerList\":[\"someChannelName\"],\"url\":\"./path/to/some.jpg\",\"msg\":\"文字訊息\"}"
+
+# 塞人入群
+pipenv run ./src/tool.py adTool.tuckUserIntoChannel <仿用戶的數量> <用戶來源群> <用戶導入群>
 ```
 
 

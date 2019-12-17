@@ -446,3 +446,64 @@ class TgBaseTool(_TgNiUsers):
             channel = groupPeer
         ))
 
+    async def getParticipants(self,
+            client: TelegramClient,
+            groupPeer: str,
+            offset: int = 0,
+            ynRealUser: bool = True,
+            excludedUserList: list = [],
+            amount: int = 200000) -> typing.Tuple[int, list]:
+        # 每次請求用戶數
+        pageAmount = amount * 2 + 10 # 估值 猜想排除的用戶數
+        pageAmount = pageAmount if pageAmount < 100 else 100
+        ynHasExcludedUsers = len(excludedUserList) != 0,
+        pickIdx = pickRealIdx = offset
+        channelParticipantsSearch = telethon.types.ChannelParticipantsSearch(q = '')
+
+        ynBreak = False
+        users = []
+        while len(users) < amount:
+            participants = await client(
+                telethon.functions.channels.GetParticipantsRequest(
+                    channel = groupPeer,
+                    filter = channelParticipantsSearch,
+                    offset = pickIdx,
+                    limit = pageAmount,
+                    hash = 0
+                )
+            )
+
+            if not participants.participants:
+                break  # No more participants left
+
+            for user in participants.users:
+                pickRealIdx += 1
+
+                # 排除 自己, 已刪除帳號, 機器人
+                # type(user.is_self) == type(user.deleted) == type(user.bot) == bool
+                if ynRealUser and (user.is_self or user.deleted or user.bot):
+                    continue
+                # 排除欲除外用戶
+                if ynHasExcludedUsers \
+                        and utils.novice.indexOf(excludedUserList, user.id) != -1:
+                    continue
+                # 排除仿用戶
+                if self.lookforClientInfo(user.id) != None:
+                    continue
+
+                # 可用物件有:
+                #   id, username, first_name, last_name
+                #   access_hash
+                users.append(user)
+
+                if len(users) == amount:
+                    ynBreak = True
+                    break
+
+            if ynBreak:
+                break
+
+            pickIdx += pageAmount
+
+        return (pickRealIdx, users)
+

@@ -8,6 +8,7 @@ _dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 _origArgs = sys.argv
 _pyTool = {
     'adTool.sendAdPhoto': 'toolBox/adTool/sendAdPhoto',
+    'adTool.tuckUserIntoChannel': 'toolBox/adTool/tuckUserIntoChannel',
 }
 
 if len(_origArgs) == 1:
