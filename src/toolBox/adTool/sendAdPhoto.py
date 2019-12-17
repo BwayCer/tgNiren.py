@@ -58,17 +58,18 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             ))
         except telethon.errors.MessageIdInvalidError as err:
             print('MessageIdInvalidError: {}'.format(err))
-            os._exit(1)
+            raise err
         except telethon.errors.FloodWaitError as err:
-            print('FloodWaitError: {} ({})'.format(err.second, ))
-            meInfo = await client.get_me()
+            waitTimeSec = err.seconds
+            print("FloodWaitError: wait {} seconds.".format(waitTimeSec))
+            myInfo = await client.get_me()
             maturityDate = datetime.datetime.now() \
-                + datetime.timedelta(seconds = err.seconds)
-            tgTool.chanDataNiUsers.pushBandData(meInfo.phone, maturityDate)
+                + datetime.timedelta(seconds = waitTimeSec)
+            tgTool.chanDataNiUsers.pushBandData(myInfo.phone, maturityDate)
             await tgTool.reinit()
         except telethon.errors.ChatWriteForbiddenError as err:
-            print('ChatWriteForbiddenError: {} ({})'.format(err.second, err.seconds))
             # You can't write in this chat
+            print('ChatWriteForbiddenError: {}'.format(err))
             tgTool.chanData.pushGuy(
                 await client.get_entity(forwardPeer),
                 err
