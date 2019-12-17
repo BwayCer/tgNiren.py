@@ -69,7 +69,10 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         except telethon.errors.ChatWriteForbiddenError as err:
             print('ChatWriteForbiddenError: {} ({})'.format(err.second, err.seconds))
             # You can't write in this chat
-            tgTool.chanData.pushGuy(forwardPeer, err)
+            tgTool.chanData.pushGuy(
+                await client.get_entity(forwardPeer),
+                err
+            )
         except Exception as err:
             print('{} Error: {} (target group: {})'.format(type(err), err, forwardPeer))
 
