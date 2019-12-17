@@ -17,13 +17,19 @@ elif _origArgs[1] in '--router':
         print('  => {}: {}'.format(name, _pyTool[name]))
 elif _origArgs[1] in _pyTool:
     import importlib
-    importlib.import_module(
-        _pyTool[_origArgs[1]].replace('/', '.')
-    ).run(
-        [_origArgs[0], *_origArgs[2:]],
-        os.path.dirname(_dirname + '/' + _pyTool[_origArgs[1]]),
-        _dirname
-    )
+    import utils.chanData
+    try:
+        importlib.import_module(
+            _pyTool[_origArgs[1]].replace('/', '.')
+        ).run(
+            [_origArgs[0], *_origArgs[2:]],
+            os.path.dirname(_dirname + '/' + _pyTool[_origArgs[1]]),
+            _dirname
+        )
+    except Exception as err:
+        logNeedle = utils.chanData.LogNeedle()
+        logNeedle.pushException()
+        raise err
 else:
     raise Exception('[tool]: Not found "' + _origArgs[1] + '" command.')
 

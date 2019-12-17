@@ -5,6 +5,7 @@ import typing
 import os
 import sys
 import rejson
+import utils.novice
 import utils.json
 
 
@@ -108,4 +109,27 @@ class ChanData():
         result = self.opt('jsondel', memberPath)
         ysDelete = True if result == 1 else False
         return ysDelete
+
+class LogNeedle(ChanData):
+    def __init__(self):
+        if self.getSafe('.log') == None:
+            self.set('.log', [])
+
+    @ChanData.dFakeLockSet(memberPath = '.log', ysStore = True)
+    def _push(self, txt: str) -> list:
+        loog = self.get('.log')
+        loog.append(txt)
+        return loog
+
+    def push(self, txt: str, ysHasTimestamp: bool = True) -> bool:
+        logTxt = txt
+        if ysHasTimestamp:
+            logTxt += '\n  Timestamp: {}'.format(
+                utils.novice.dateStringify(utils.novice.dateNow())
+            )
+        return self._push(logTxt)
+
+    def pushException(self) -> bool:
+        logTxt = utils.novice.sysTracebackException(ysHasTimestamp = True)
+        return self._push(logTxt)
 
