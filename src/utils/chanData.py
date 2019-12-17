@@ -129,3 +129,7 @@ class LogNeedle(ChanData):
             )
         return self._push(logTxt)
 
+    def pushException(self) -> bool:
+        logTxt = utils.novice.sysTracebackException(ysHasTimestamp = True)
+        return self._push(logTxt)
+
