@@ -180,15 +180,6 @@ class _TgChanData(utils.chanData.ChanData):
                 'infos': [],
                 'list': [],
             })
-            self.set('.log', [])
-
-    @utils.chanData.ChanData.dFakeLockSet(memberPath = '.blackGuy', ysStore = True)
-    def pushLog(self, txt: str) -> None:
-        logNote = self.get('.log')
-        logNote.append('Date: {}; Txt: {}'.format(
-            utils.novice.dateStringify(utils.novice.dateNow()),
-            txt
-        ))
 
     @utils.chanData.ChanData.dFakeLockSet(memberPath = '.blackGuy', ysStore = True)
     def pushGuy(self, peer: TgTypeing.InputPeer, err: Exception) -> dict:
