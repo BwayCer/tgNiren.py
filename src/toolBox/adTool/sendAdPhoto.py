@@ -28,7 +28,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         _env['apiId'],
         _env['apiHash'],
         sessionDirPath = _dirname + '/_tgSession',
-        clientCountLimit = 3,
+        clientCount = 3,
         papaPhone = _env['papaPhoneNumber']
     )
     await tgTool.init()

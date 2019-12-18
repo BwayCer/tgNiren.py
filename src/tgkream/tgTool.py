@@ -217,14 +217,14 @@ class _TgNiUsers():
             apiId: str,
             apiHash: str,
             sessionDirPath: str,
-            clientCountLimit: int = 3,
+            clientCount: int = 3,
             papaPhone: str = '') -> None:
         self._apiId = apiId
         self._apiHash = apiHash
         self._pickClientIdx = -1
         self._clientInfoList = []
 
-        self._clientCountLimit = clientCountLimit if clientCountLimit > 0 else 3
+        self.clientCount = clientCount if clientCount > 0 else 3
         self.chanDataNiUsers = _TgChanData_NiUsers(sessionDirPath, papaPhone)
 
         # 父親帳戶 仿用戶的頭子
@@ -237,7 +237,7 @@ class _TgNiUsers():
             self.release()
 
     async def init(self) -> None:
-        clientCount = self._clientCountLimit
+        clientCount = self.clientCount
         chanDataNiUsers = self.chanDataNiUsers
 
         # 30 * 6 sec ~= 3 min
@@ -412,13 +412,13 @@ class TgBaseTool(_TgNiUsers):
             apiId: str,
             apiHash: str,
             sessionDirPath: str,
-            clientCountLimit: int = 3,
+            clientCount: int = 3,
             papaPhone: str = 0):
         self._initTgNiUsers(
             apiId = apiId,
             apiHash = apiHash,
             sessionDirPath = sessionDirPath,
-            clientCountLimit = clientCountLimit,
+            clientCount = clientCount,
             papaPhone = papaPhone
         )
         self.chanData = _TgChanData()

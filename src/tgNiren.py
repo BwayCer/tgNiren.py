@@ -18,7 +18,7 @@ async def main():
         _env['apiId'],
         _env['apiHash'],
         sessionDirPath = _dirname + '/_tgSession',
-        clientCountLimit = 1,
+        clientCount = 1,
         papaPhone = _env['papaPhoneNumber']
     )
     await tgTool.init()
