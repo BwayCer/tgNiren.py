@@ -70,7 +70,7 @@ class _TgChanData_NiUsers():
 
         bands = niUsers['bandList']
         nowTimeMs = utils.novice.dateNowTimestamp()
-        for idx in range(bandInfosLength):
+        for idx in range(bandInfosLength - 1, -1, -1):
             bandInfo = bandInfos[idx]
             if bandInfo['bannedWaitTimeMs'] < nowTimeMs:
                 del bandInfos[idx]
