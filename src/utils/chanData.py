@@ -62,7 +62,7 @@ class ChanData():
                         _ysUpdate = True
                         if ysStore:
                             _ysUpdate = False
-                            rootData = _rjdb.jsonget(_redisKey, rejson.Path.rootPath())
+                            rootData = _rjdb.jsonget(_redisKey, rejson.Path.rootPath(), no_escape = True)
                             utils.json.dump(rootData, _chanDataFilePath)
                         return True
 
@@ -78,13 +78,15 @@ class ChanData():
 
         if _ysUpdate:
             _ysUpdate = False
-            rootData = _rjdb.jsonget(_redisKey, rejson.Path.rootPath())
+            rootData = _rjdb.jsonget(_redisKey, rejson.Path.rootPath(), no_escape = True)
             utils.json.dump(rootData, _chanDataFilePath)
 
     def opt(self, method: str, memberPath: str, *args) -> typing.Any:
         methodFn = getattr(_rjdb, method)
         if len(args) == 0:
-            return methodFn(_redisKey, rejson.Path(memberPath))
+            # TODO 目前知道 `jsonget` 有 "no_escape" 的欄位
+            # https://github.com/RedisJSON/RedisJSON/issues/35
+            return methodFn(_redisKey, rejson.Path(memberPath), no_escape = True)
         else:
             value = args[0]
             result = methodFn(_redisKey, rejson.Path(memberPath), value)
