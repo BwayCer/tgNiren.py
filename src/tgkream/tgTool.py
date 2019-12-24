@@ -21,6 +21,11 @@ TelegramClient = telethon.TelegramClient
 
 
 class TgTypeing():
+    Peer = typing.Union[
+        telethon.types.Chat,
+        telethon.types.User,
+        telethon.types.Channel,
+    ]
     InputPeer = typing.Union[
         telethon.types.InputPeerEmpty,
         telethon.types.InputPeerSelf,
@@ -184,7 +189,7 @@ class _TgChanData(utils.chanData.ChanData):
             })
 
     @utils.chanData.ChanData.dFakeLockSet(memberPath = '.blackGuy', ysStore = True)
-    def pushGuy(self, peer: TgTypeing.InputPeer, err: Exception) -> dict:
+    def pushGuy(self, peer: TgTypeing.Peer, err: Exception) -> dict:
         blackGuy = self.get('.blackGuy')
         blackGuyInfos = blackGuy['infos']
         blackGuyList = blackGuy['list']
