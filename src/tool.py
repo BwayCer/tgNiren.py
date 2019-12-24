@@ -9,6 +9,7 @@ _origArgs = sys.argv
 _pyTool = {
     'adTool.sendAdPhoto': 'toolBox/adTool/sendAdPhoto',
     'adTool.tuckUserIntoChannel': 'toolBox/adTool/tuckUserIntoChannel',
+    'hi': 'toolBox/hi',
 }
 
 if len(_origArgs) == 1:

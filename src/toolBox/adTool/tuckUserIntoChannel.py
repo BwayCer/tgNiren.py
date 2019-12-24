@@ -10,6 +10,12 @@ import utils.json
 from tgkream.tgTool import TgBaseTool, telethon, TelegramClient
 
 
+# api_id = 536160
+# api_hash = '62a87b51df06d2e5c81bab860d18f31f'
+# phone = '886938980822'
+# phone = '6594799827'
+
+
 def run(args: list, _dirpy: str, _dirname: str):
     asyncio.run(asyncRun(args, _dirpy, _dirname))
 

@@ -426,8 +426,75 @@ class TgBaseTool(_TgNiUsers):
         )
         self.chanData = _TgChanData()
 
+    # def dClientLoop(fn):
+        # def newFn(self, *args):
+            # clientInfoList = self._clientInfoList
+            # for clientInfo in clientInfoList:
+                # client = clientInfo['client']
+                # fn(self, client, *args)
+        # return newFn
+
+    # def iterPickTuckIntoChannelInfo(self,
+            # fromGroupCode: str,
+            # toGroupCode: str,
+            # indexPtr: list = [0]):
+        # clientInfoList = self._clientInfoList
+
+        # client = self.pickClient()
+        # self.joinGroup(client, fromGroupCode)
+        # # 取得欲拉取用戶總數
+        # usersLength = len(self.getGroupUsers(client, fromGroupCode))
+        # # 取得已經入群的排除用戶清單
+        # excludedUsers = self._getExcludedUsers(client, toGroupCode)
+
+        # # 每個帳號各執行一次就好
+        # for clientInfo in clientInfoList:
+            # client = clientInfo['client']
+
+            # self.joinGroup(client, fromGroupCode)
+
+            # # 程式每次運行，仿用戶都需查詢目標用戶至少一次
+            # peerUsers = self._pickGroupUser20(
+                    # client,
+                    # fromGroupCode,
+                    # indexPtr,
+                    # excludedUsers)
+
+            # # 名單中已經沒有人了就退出
+            # if len(peerUsers) == 0:
+                # print('echo>> [TgAdTool._gPickTuckIntoChannelInfo]: {}'.format(
+                    # '名單中已經沒有人了就退出'))
+                # break
+
+            # yield {
+                    # 'clientId': clientInfo['id'],
+                    # 'client': client,
+                    # 'peerUsers': peerUsers,
+                    # 'userIndex': indexPtr[0],
+                    # 'userTotal': usersLength,
+                    # }
+
+            # # 全部用戶都拉過後就退出
+            # if not indexPtr[0] < usersLength:
+                # print('echo>> [TgAdTool._gPickTuckIntoChannelInfo]: {}'.format(
+                    # '全部用戶都拉過後就退出'))
+                # break
+
     def getRandId(self):
         return random.randrange(1000000, 9999999)
+
+    # async def getPeer(self, client: TelegramClient, code: typing.Union[int, str]):
+        # targetInfo = await client.get_entity(code)
+        # print('getPeer 1', targetInfo.id, targetInfo.username, type(targetInfo), targetInfo)
+
+        # if type(targetInfo) == telethon.types.User:
+            # UsedType = telethon.types.InputPeerUser
+        # elif type(targetInfo) == telethon.types.Channel:
+            # UsedType = telethon.types.InputPeerChannel
+
+        # tmp = UsedType(targetInfo.id, targetInfo.access_hash)
+        # print('getPeer 2', tmp.id, tmp.username, type(tmp), tmp)
+        # return UsedType(targetInfo.id, targetInfo.access_hash)
 
     def joinGroup(self,
             client: TelegramClient,
@@ -506,4 +573,27 @@ class TgBaseTool(_TgNiUsers):
             pickIdx += pageAmount
 
         return (pickRealIdx, users)
+
+    # def sendMessage(self,
+            # client: TelegramClient,
+            # chatCode: typing.Union[int, str],
+            # message: str):
+        # randId = self.getRandId()
+        # print('randId:', randId)
+        # result = client(
+            # tl.functions.messages.SendMessageRequest(
+                # peer=self.getPeer(client, chatCode),
+                # random_id=randId,
+                # message=message
+            # )
+        # )
+        # return result
+
+#     @dWaitFlood(maxTimes = 3)
+#     def sendMessagePoll(self, toGroupCode: typing.Union[int, str], randomId: int, message: str):
+#         client = self.pickClient()
+#         feedback = self.sendMessage(
+#             client, toGroupCode, randomId, message
+#         )
+#         return feedback
 
