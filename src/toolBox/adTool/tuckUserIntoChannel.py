@@ -127,8 +127,11 @@ async def _iterTuckInfo(
         tgTool: TgBaseTool,
         fromGroupPeer: str,
         toGroupPeer: str) -> dict:
+    # TODO 須實現真正意義上的 11 秒
     # 最佳間隔秒數 11~15 可以拉 45~50 人
-    bestIntervalTime = 11
+    # bestIntervalTime = 11
+    # 目前以 10 位仿用戶拉人約耗 4 秒
+    bestIntervalTime = 20
     bestPullCount = 50
     usableClientCount = tgTool.clientCount
     maxSuccessCount = bestPullCount * usableClientCount
