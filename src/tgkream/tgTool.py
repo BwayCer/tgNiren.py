@@ -240,9 +240,12 @@ class _TgNiUsers():
         clientCount = self.clientCount
         chanDataNiUsers = self.chanDataNiUsers
 
-        # 30 * 6 sec ~= 3 min
-        for idxLoop in range(60):
-            if idxLoop >= 30:
+        # 3 * 3 sec ~= 9 sec
+        idxLoop = -1
+        while True:
+            idxLoop += 1
+            print('init-{}'.format(idxLoop))
+            if idxLoop >= 3:
                 raise errors.PickPhoneMoreTimes(errors.errMsg.PickPhoneMoreTimes)
 
             if idxLoop % 3 == 0:
@@ -253,7 +256,7 @@ class _TgNiUsers():
             locks = niUsers['lockList']
 
             if len(usablePhones) - len(bands) - len(locks) < clientCount:
-                await asyncio.sleep(6)
+                await asyncio.sleep(3)
                 continue
 
             pickClients = await self._init_loginAll(usablePhones, bands, locks, clientCount)
