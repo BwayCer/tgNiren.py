@@ -22,7 +22,7 @@ def loadYml(filePath: str):
     return data
 
 def dump(data, filePath: str = None, indent: int = 2):
-    dataTxt = json.dumps(data, indent = indent)
+    dataTxt = json.dumps(data, indent = indent, ensure_ascii = False)
     if filePath != None:
         with open(filePath, 'w', encoding = 'utf-8') as fs:
             fs.write(dataTxt)

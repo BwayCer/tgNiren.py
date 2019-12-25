@@ -70,7 +70,7 @@ class _TgChanData_NiUsers():
 
         bands = niUsers['bandList']
         nowTimeMs = utils.novice.dateNowTimestamp()
-        for idx in range(bandInfosLength):
+        for idx in range(bandInfosLength - 1, -1, -1):
             bandInfo = bandInfos[idx]
             if bandInfo['bannedWaitTimeMs'] < nowTimeMs:
                 del bandInfos[idx]
@@ -217,14 +217,14 @@ class _TgNiUsers():
             apiId: str,
             apiHash: str,
             sessionDirPath: str,
-            clientCountLimit: int = 3,
+            clientCount: int = 3,
             papaPhone: str = '') -> None:
         self._apiId = apiId
         self._apiHash = apiHash
         self._pickClientIdx = -1
         self._clientInfoList = []
 
-        self._clientCountLimit = clientCountLimit if clientCountLimit > 0 else 3
+        self.clientCount = clientCount if clientCount > 0 else 3
         self.chanDataNiUsers = _TgChanData_NiUsers(sessionDirPath, papaPhone)
 
         # 父親帳戶 仿用戶的頭子
@@ -237,12 +237,15 @@ class _TgNiUsers():
             self.release()
 
     async def init(self) -> None:
-        clientCount = self._clientCountLimit
+        clientCount = self.clientCount
         chanDataNiUsers = self.chanDataNiUsers
 
-        # 30 * 6 sec ~= 3 min
-        for idxLoop in range(60):
-            if idxLoop >= 30:
+        # 3 * 3 sec ~= 9 sec
+        idxLoop = -1
+        while True:
+            idxLoop += 1
+            print('init-{}'.format(idxLoop))
+            if idxLoop >= 3:
                 raise errors.PickPhoneMoreTimes(errors.errMsg.PickPhoneMoreTimes)
 
             if idxLoop % 3 == 0:
@@ -253,7 +256,7 @@ class _TgNiUsers():
             locks = niUsers['lockList']
 
             if len(usablePhones) - len(bands) - len(locks) < clientCount:
-                await asyncio.sleep(6)
+                await asyncio.sleep(3)
                 continue
 
             pickClients = await self._init_loginAll(usablePhones, bands, locks, clientCount)
@@ -412,13 +415,13 @@ class TgBaseTool(_TgNiUsers):
             apiId: str,
             apiHash: str,
             sessionDirPath: str,
-            clientCountLimit: int = 3,
+            clientCount: int = 3,
             papaPhone: str = 0):
         self._initTgNiUsers(
             apiId = apiId,
             apiHash = apiHash,
             sessionDirPath = sessionDirPath,
-            clientCountLimit = clientCountLimit,
+            clientCount = clientCount,
             papaPhone = papaPhone
         )
         self.chanData = _TgChanData()
