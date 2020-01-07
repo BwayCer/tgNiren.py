@@ -6,7 +6,7 @@ import sys
 import asyncio
 import utils.json
 import utils.novice
-from tgkream.tgTool import TgNiUsers
+from tgkream.tgTool import TgBaseTool
 
 
 _dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -14,7 +14,7 @@ _env = utils.json.loadYml(_dirname + '/env.yml')
 
 
 async def main():
-    tgTool = TgNiUsers(
+    tgTool = TgBaseTool(
         _env['apiId'],
         _env['apiHash'],
         sessionDirPath = _dirname + '/_tgSession',
