@@ -429,6 +429,24 @@ class TgBaseTool(_TgNiUsers):
     def getRandId(self):
         return random.randrange(1000000, 9999999)
 
+    # TgTypeing.Peer
+    async def getPeerTypeName(self, peer: TgTypeing.AutoInputPeer) -> str:
+        if type(peer) == str:
+            async with self.usePapaClient() as client:
+                inputPeer = await client.get_entity(peer)
+        else:
+            inputPeer = peer
+
+        inputPeerType = type(inputPeer)
+        if inputPeerType == telethon.types.Chat:
+            inputPeerTypeName = 'Chat'
+        elif inputPeerType == telethon.types.User:
+            inputPeerTypeName = 'User'
+        elif inputPeerType == telethon.types.Channel:
+            inputPeerTypeName = 'Channel'
+
+        return inputPeerTypeName
+
     def joinGroup(self,
             client: TelegramClient,
             groupPeer: TgTypeing.AutoInputPeer) -> telethon.types.Updates:
