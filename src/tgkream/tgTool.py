@@ -359,17 +359,26 @@ class _TgNiUsers():
             raise errors.WhoIsPapa(errors.errMsg.WhoIsPapa)
 
         papaPhone = self._papaPhone
+        error = None
 
         while True:
             if self.chanDataNiUsers.lockPhone(papaPhone):
                 client = await self._login(papaPhone)
-                yield client
+
+                try:
+                    yield client
+                except Exception as err:
+                    error = err
+
                 await client.disconnect()
                 break
 
             await asyncio.sleep(1)
 
         self.chanDataNiUsers.unlockPhones([papaPhone])
+
+        if error != None:
+            raise error
 
     async def pickClient(self) -> TelegramClient:
         clientInfoList = self._clientInfoList
