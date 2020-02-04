@@ -312,7 +312,9 @@ class _TgNiUsers():
         sessionPath = chanDataNiUsers.getSessionPath(phoneNumber)
 
         if not os.path.exists(sessionPath):
-            raise errors.UserNotAuthorized(errors.errMsg.UserNotAuthorized)
+            raise errors.UserNotAuthorized(
+                errors.errMsg.SessionFileNotExistsTemplate.format(phoneNumber)
+            )
 
         client = TelegramClient(
             chanDataNiUsers.getSessionPath(phoneNumber, noExt = True),
@@ -328,7 +330,9 @@ class _TgNiUsers():
             raise err
 
         if not await client.is_user_authorized():
-            err = errors.UserNotAuthorized(errors.errMsg.UserNotAuthorized)
+            err = errors.UserNotAuthorized(
+                errors.errMsg.UserNotAuthorizedTemplate.format(phoneNumber)
+            )
             chanDataNiUsers.pushCemeteryData(phoneNumber, err)
             return None
 
