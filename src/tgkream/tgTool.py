@@ -228,6 +228,8 @@ class _TgNiUsers():
         self.ysUsablePapaClient = papaPhone != ''
         self._papaPhone = papaPhone
 
+        self._currentClient = None
+
         # 異常退出時執行
         @utils.novice.dOnExit
         def onExit():
@@ -381,12 +383,24 @@ class _TgNiUsers():
         if error != None:
             raise error
 
+    async def pickCurrentClient(self, client: TelegramClient = None) -> TelegramClient:
+        if client != None:
+            self._currentClient = client
+        elif self._currentClient == None:
+            await self.pickClient()
+
+        return self._currentClient
+
     async def pickClient(self) -> TelegramClient:
         clientInfoList = self._clientInfoList
         self._pickClientIdx += 1
         pickIdx = self._pickClientIdx % len(clientInfoList)
-        return clientInfoList[pickIdx]['client']
+        self._currentClient = clientInfoList[pickIdx]['client']
+        return self._currentClient
 
+    # TODO
+    # 當調用的迴圈用 break 跳出時，無法使用 try finally 捕獲，
+    # 因而無法自動回復 `self._currentClient` 的原始值
     async def iterPickClient(self,
             circleLimit: int = 1,
             circleInterval: float = 1) -> TelegramClient:
@@ -412,13 +426,12 @@ class _TgNiUsers():
                 else:
                     prevTimeMs = nowTimeMs
 
-            client = clientInfoList[pickIdx]['client']
-            yield client
+            self._currentClient = clientInfoList[pickIdx]['client']
+            yield self._currentClient
 
             idxLoop += 1
             if 0 < maxLoopTimes and maxLoopTimes <= idxLoop:
                 break
-
 
 class TgBaseTool(_TgNiUsers):
     def __init__(self,
@@ -443,8 +456,8 @@ class TgBaseTool(_TgNiUsers):
     # TgTypeing.Peer
     async def getPeerTypeName(self, peer: TgTypeing.AutoInputPeer) -> str:
         if type(peer) == str:
-            async with self.usePapaClient() as client:
-                inputPeer = await client.get_entity(peer)
+            client = await self.pickCurrentClient()
+            inputPeer = await client.get_entity(peer)
         else:
             inputPeer = peer
 
