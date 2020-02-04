@@ -210,10 +210,7 @@ class _TgChanData(utils.chanData.ChanData):
 
 
 class _TgNiUsers():
-    def __init__(self, *args):
-        self._initTgNiUsers(*args)
-
-    def _initTgNiUsers(self,
+    def __init__(self,
             apiId: str,
             apiHash: str,
             sessionDirPath: str,
@@ -426,7 +423,8 @@ class TgBaseTool(_TgNiUsers):
             sessionDirPath: str,
             clientCount: int = 3,
             papaPhone: str = 0):
-        self._initTgNiUsers(
+        _TgNiUsers.__init__(
+            self,
             apiId = apiId,
             apiHash = apiHash,
             sessionDirPath = sessionDirPath,
