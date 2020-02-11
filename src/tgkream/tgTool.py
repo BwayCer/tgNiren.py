@@ -210,10 +210,7 @@ class _TgChanData(utils.chanData.ChanData):
 
 
 class _TgNiUsers():
-    def __init__(self, *args):
-        self._initTgNiUsers(*args)
-
-    def _initTgNiUsers(self,
+    def __init__(self,
             apiId: str,
             apiHash: str,
             sessionDirPath: str,
@@ -230,6 +227,8 @@ class _TgNiUsers():
         # 父親帳戶 仿用戶的頭子
         self.ysUsablePapaClient = papaPhone != ''
         self._papaPhone = papaPhone
+
+        self._currentClient = None
 
         # 異常退出時執行
         @utils.novice.dOnExit
@@ -315,7 +314,9 @@ class _TgNiUsers():
         sessionPath = chanDataNiUsers.getSessionPath(phoneNumber)
 
         if not os.path.exists(sessionPath):
-            raise errors.UserNotAuthorized(errors.errMsg.UserNotAuthorized)
+            raise errors.UserNotAuthorized(
+                errors.errMsg.SessionFileNotExistsTemplate.format(phoneNumber)
+            )
 
         client = TelegramClient(
             chanDataNiUsers.getSessionPath(phoneNumber, noExt = True),
@@ -331,7 +332,9 @@ class _TgNiUsers():
             raise err
 
         if not await client.is_user_authorized():
-            err = errors.UserNotAuthorized(errors.errMsg.UserNotAuthorized)
+            err = errors.UserNotAuthorized(
+                errors.errMsg.UserNotAuthorizedTemplate.format(phoneNumber)
+            )
             chanDataNiUsers.pushCemeteryData(phoneNumber, err)
             return None
 
@@ -359,11 +362,17 @@ class _TgNiUsers():
             raise errors.WhoIsPapa(errors.errMsg.WhoIsPapa)
 
         papaPhone = self._papaPhone
+        error = None
 
         while True:
             if self.chanDataNiUsers.lockPhone(papaPhone):
                 client = await self._login(papaPhone)
-                yield client
+
+                try:
+                    yield client
+                except Exception as err:
+                    error = err
+
                 await client.disconnect()
                 break
 
@@ -371,12 +380,27 @@ class _TgNiUsers():
 
         self.chanDataNiUsers.unlockPhones([papaPhone])
 
+        if error != None:
+            raise error
+
+    async def pickCurrentClient(self, client: TelegramClient = None) -> TelegramClient:
+        if client != None:
+            self._currentClient = client
+        elif self._currentClient == None:
+            await self.pickClient()
+
+        return self._currentClient
+
     async def pickClient(self) -> TelegramClient:
         clientInfoList = self._clientInfoList
         self._pickClientIdx += 1
         pickIdx = self._pickClientIdx % len(clientInfoList)
-        return clientInfoList[pickIdx]['client']
+        self._currentClient = clientInfoList[pickIdx]['client']
+        return self._currentClient
 
+    # TODO
+    # 當調用的迴圈用 break 跳出時，無法使用 try finally 捕獲，
+    # 因而無法自動回復 `self._currentClient` 的原始值
     async def iterPickClient(self,
             circleLimit: int = 1,
             circleInterval: float = 1) -> TelegramClient:
@@ -402,13 +426,12 @@ class _TgNiUsers():
                 else:
                     prevTimeMs = nowTimeMs
 
-            client = clientInfoList[pickIdx]['client']
-            yield client
+            self._currentClient = clientInfoList[pickIdx]['client']
+            yield self._currentClient
 
             idxLoop += 1
             if 0 < maxLoopTimes and maxLoopTimes <= idxLoop:
                 break
-
 
 class TgBaseTool(_TgNiUsers):
     def __init__(self,
@@ -417,7 +440,8 @@ class TgBaseTool(_TgNiUsers):
             sessionDirPath: str,
             clientCount: int = 3,
             papaPhone: str = 0):
-        self._initTgNiUsers(
+        _TgNiUsers.__init__(
+            self,
             apiId = apiId,
             apiHash = apiHash,
             sessionDirPath = sessionDirPath,
@@ -428,6 +452,24 @@ class TgBaseTool(_TgNiUsers):
 
     def getRandId(self):
         return random.randrange(1000000, 9999999)
+
+    # TgTypeing.Peer
+    async def getPeerTypeName(self, peer: TgTypeing.AutoInputPeer) -> str:
+        if type(peer) == str:
+            client = await self.pickCurrentClient()
+            inputPeer = await client.get_entity(peer)
+        else:
+            inputPeer = peer
+
+        inputPeerType = type(inputPeer)
+        if inputPeerType == telethon.types.Chat:
+            inputPeerTypeName = 'Chat'
+        elif inputPeerType == telethon.types.User:
+            inputPeerTypeName = 'User'
+        elif inputPeerType == telethon.types.Channel:
+            inputPeerTypeName = 'Channel'
+
+        return inputPeerTypeName
 
     def joinGroup(self,
             client: TelegramClient,

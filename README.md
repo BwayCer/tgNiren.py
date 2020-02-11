@@ -13,6 +13,8 @@ Use [Telethon](https://github.com/LonamiWebs/Telethon) to operate niren user.
 
 ```
 pipenv install
+// or
+// pip install -r requirements.txt
 
 cp ./src/env.example.yml ./src/env.yml
 # edit ./src/env.yml

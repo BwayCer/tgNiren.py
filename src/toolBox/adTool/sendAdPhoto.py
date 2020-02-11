@@ -49,7 +49,10 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         forwardPeer = finalPeers[idx]
         # TODO 不太會被封 需再測試才能確定 try cache 語句是否有錯誤
         try:
-            await tgTool.joinGroup(client, forwardPeer)
+            typeName = await tgTool.getPeerTypeName(forwardPeer)
+            if typeName != 'User':
+                await tgTool.joinGroup(client, forwardPeer)
+
             await client(telethon.functions.messages.ForwardMessagesRequest(
                 from_peer = mainGroup,
                 id = [messageId],

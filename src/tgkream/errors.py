@@ -7,5 +7,6 @@ class UserNotAuthorized(Exception): pass
 class errMsg():
     PickPhoneMoreTimes = 'Loop more times at pick phone.'
     WhoIsPapa = 'Don\'t know Papa he is'
-    UserNotAuthorized = 'The NiUser is not authorized.'
+    SessionFileNotExistsTemplate = 'The session file of "{}" NiUser is not exists.'
+    UserNotAuthorizedTemplate = 'The "{}" NiUser is not authorized.'
 
