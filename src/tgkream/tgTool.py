@@ -426,7 +426,11 @@ class TgBaseTool(_TgNiUsers):
             clientCount = clientCount,
             papaPhone = papaPhone
         )
+
         self.chanData = _TgChanData()
+
+    def getClientInfoList(self) -> list:
+        return self._clientInfoList
 
     def getRandId(self):
         return random.randrange(1000000, 9999999)
