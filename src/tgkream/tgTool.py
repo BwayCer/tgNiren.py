@@ -206,7 +206,7 @@ class _TgNiUsers():
         idxLoop = -1
         while True:
             idxLoop += 1
-            print('init-{}'.format(idxLoop))
+            print('init run {} time ...'.format(idxLoop))
             if idxLoop >= 3:
                 raise errors.PickPhoneMoreTimes(errors.errMsg.PickPhoneMoreTimes)
 

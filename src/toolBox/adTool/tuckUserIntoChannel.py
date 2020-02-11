@@ -57,7 +57,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             print('PeerFloodError: {}'.format(type(err), err))
             print('-=-')
             logNeedle.push(
-                '[tuckUserIntoChannel]: The +{} phone Get PeerFloodError'.format(myId)
+                '[tuckUserIntoChannel]: The +{} phone get PeerFloodError'.format(myId)
             )
             # TODO 12 小時只是估計值
             maturityDate = utils.novice.dateNowAfter(hours = 12)
