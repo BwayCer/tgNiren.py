@@ -12,6 +12,8 @@ import utils.json
 _dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 _env = utils.json.loadYml(_dirname + '/env.yml')
 
+_logFilePath = _dirname + '/' + _env['logFilePath']
+
 _redisKey = 'tgNiren'
 _chanDataFilePath = _dirname + '/data.redis.json'
 
@@ -112,26 +114,18 @@ class ChanData():
         ysDelete = True if result == 1 else False
         return ysDelete
 
-class LogNeedle(ChanData):
-    def __init__(self):
-        if self.getSafe('.log') == None:
-            self.set('.log', [])
+class LogNeedle():
+    def __init__(self): pass
 
-    @ChanData.dFakeLockSet(memberPath = '.log', ysStore = True)
-    def _push(self, txt: str) -> list:
-        loog = self.get('.log')
-        loog.append(txt)
-        return loog
-
-    def push(self, txt: str, ysHasTimestamp: bool = True) -> bool:
-        logTxt = txt
-        if ysHasTimestamp:
-            logTxt += '\n  Timestamp: {}'.format(
-                utils.novice.dateStringify(utils.novice.dateNow())
-            )
-        return self._push(logTxt)
+    def push(self, text: str) -> None:
+        logTxt = '-~@~- {}\n{}\n\n'.format(
+            utils.novice.dateStringify(utils.novice.dateNow()),
+            text
+        )
+        with open(_logFilePath, 'a', encoding = 'utf-8') as fs:
+            fs.write(logTxt)
 
     def pushException(self) -> bool:
-        logTxt = utils.novice.sysTracebackException(ysHasTimestamp = True)
-        return self._push(logTxt)
+        logTxt = utils.novice.sysTracebackException()
+        self.push(logTxt)
 
