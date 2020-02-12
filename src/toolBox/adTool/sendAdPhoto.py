@@ -103,7 +103,7 @@ async def _sendFile(tgTool: TgBaseTool, group: str, url: str, msg: str = '') -> 
     return messageId
 
 def _filterGuy(tgTool: TgBaseTool, mainList: typing.List[str]) -> typing.List[str]:
-    blackGuyList = tgTool.chanData.get('.blackGuy.list')
+    blackGuyList = tgTool.chanData.data['blackGuy']['list']
     newList = []
     for peer in mainList:
         if utils.novice.indexOf(blackGuyList, peer) == -1:

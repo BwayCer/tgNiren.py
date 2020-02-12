@@ -7,9 +7,6 @@ verify_ssl = true
 
 [packages]
 pyyaml = "*"
-six = "*"
-redis = "*"
-rejson = "*"
 telethon = "*"
 
 [requires]
