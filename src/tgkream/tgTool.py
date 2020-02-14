@@ -223,7 +223,7 @@ class _TgNiUsers():
         # 異常退出時執行
         @utils.novice.dOnExit
         def onExit():
-            self.release()
+            asyncio.run(self.release())
 
     async def init(self) -> None:
         clientCount = self.clientCount
@@ -330,12 +330,15 @@ class _TgNiUsers():
 
         return client
 
-    def release(self, *args):
-        self._clientInfoList.clear()
+    async def release(self, *args):
+        clientInfoList = self._clientInfoList
+        for clientInfo in clientInfoList:
+            await clientInfo['client'].disconnect()
+        clientInfoList.clear()
         self.chanDataNiUsers.unlockPhones(*args)
 
     async def reinit(self):
-        self.release()
+        await self.release()
         await self.init()
 
     def lookforClientInfo(self,
