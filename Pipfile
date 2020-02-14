@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 pyyaml = "*"
 telethon = "*"
+quart = "*"
 
 [requires]
 python_version = "3"
