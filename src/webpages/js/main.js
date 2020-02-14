@@ -2,6 +2,53 @@
 
 
 (_ => {
+    const helNiUsersStatus = document.querySelector('.cStatusInfo_niUsers');
+    const helLatestStatus = document.querySelector('.cStatusInfo_latest');
+    (async function checkStatus(errorCount) {
+        const fetchResult = await fetch('/api/latestStatus', {
+            method: 'POST',
+            headers: new Headers({
+                'Content-Type': 'application/json'
+            }),
+            body: JSON.stringify({
+                method: 'latestStatus'
+            }),
+        });
+
+        let niUsersStatus = '';
+        let latestStatus = '';
+
+        if (fetchResult.status >= 500) {
+            errorCount += 1;
+            latestStatus = `${fetchResult.status} 主機錯誤`;
+        } else {
+            let data = await fetchResult.json();
+
+            if (fetchResult.status >= 400) {
+                errorCount += 1;
+                latestStatus = data.message;
+            } else {
+                errorCount = 0;
+                niUsersStatus = data.niUsersStatus;
+                latestStatus = data.latestStatus;
+                niUsersStatus = niUsersStatus !== null ? niUsersStatus : '---';
+                latestStatus = latestStatus !== null ? latestStatus : '---';
+            }
+        }
+
+        helNiUsersStatus.innerText = niUsersStatus;
+        helLatestStatus.innerText = latestStatus;
+
+        if (errorCount < 3) {
+            setTimeout(checkStatus, 3000, errorCount);
+        } else {
+            helLatestStatus.innerText += ' (請試試重整網頁 (F5))';
+        }
+    })(0);
+})();
+
+
+(_ => {
     const helFormRoomIds = document.querySelector('.cPaperSlip_form_roomIds > .makeInput');
 
     function _csvParse(csvData) {

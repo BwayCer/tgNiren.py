@@ -2,6 +2,10 @@ body {
   font-family: "Noto Sans TC";
 }
 
+.cStatusInfo {
+  padding: 1em;
+}
+
 .cPaperSlip {
   padding: 1em;
 }

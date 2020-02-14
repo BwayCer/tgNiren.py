@@ -14,7 +14,7 @@ import utils.novice
 import tgkream.errors as errors
 
 
-__all__ = ['TgBaseTool']
+__all__ = ['TgBaseTool', 'tgTodoFunc']
 
 
 TelegramClient = telethon.TelegramClient
@@ -538,4 +538,25 @@ class TgBaseTool(_TgNiUsers):
             pickIdx += pageAmount
 
         return (pickRealIdx, users)
+
+
+# TODO 因時程關係未拆分程式碼
+
+import os
+import sys
+
+_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
+_env = utils.json.loadYml(_dirname + '/env.yml')
+
+class tgTodoFunc():
+    def getNiUsersStatusInfo():
+        chanDataNiUsers = _TgChanData_NiUsers(
+            _dirname + '/' + _env['tgSessionDirPath'],
+            _env['papaPhoneNumber']
+        )
+        usablePhones = chanDataNiUsers.getUsablePhones()
+        niUsers = chanDataNiUsers.chanData.data['niUsers']
+        bands = niUsers['bandList']
+        locks = niUsers['lockList']
+        return {'allCount': len(usablePhones), 'lockCount':  len(bands) + len(locks)}
 
