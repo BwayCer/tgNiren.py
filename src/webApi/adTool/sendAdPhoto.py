@@ -125,7 +125,11 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
         else:
             pageSession['latestStatus'] += ' (結束)'
     except Exception as err:
-        pageSession['latestStatus'] += ' (失敗)\n{} Error: {} (target group: {})'.format(type(err), err, forwardPeer)
+        pageSession['latestStatus'] += ' (失敗)\n{} Error: {} (target group: {})'.format(
+            type(err),
+            utils.novice.sysTracebackException(),
+            forwardPeer
+        )
     finally:
         pageSession['runing'] = False
         await tgTool.release()

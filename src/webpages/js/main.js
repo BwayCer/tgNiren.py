@@ -5,15 +5,21 @@
     const helNiUsersStatus = document.querySelector('.cStatusInfo_niUsers');
     const helLatestStatus = document.querySelector('.cStatusInfo_latest');
     (async function checkStatus(errorCount) {
-        const fetchResult = await fetch('/api/latestStatus', {
-            method: 'POST',
-            headers: new Headers({
-                'Content-Type': 'application/json'
-            }),
-            body: JSON.stringify({
-                method: 'latestStatus'
-            }),
-        });
+        let fetchResult;
+        try {
+            fetchResult = await fetch('/api/latestStatus', {
+                method: 'POST',
+                headers: new Headers({
+                    'Content-Type': 'application/json'
+                }),
+                body: JSON.stringify({
+                    method: 'latestStatus'
+                }),
+            });
+        } catch (err) {
+            alert('找不到主機');
+            return;
+        }
 
         let niUsersStatus = '';
         let latestStatus = '';
@@ -109,13 +115,19 @@
                 mainGroup: helFormSourceRoomId.value,
                 messageId: parseInt(helFormSourceMessageId.value),
             };
-            const fetchResult = await fetch('.', {
-                method: 'POST',
-                headers: new Headers({
-                    'Content-Type': 'application/json'
-                }),
-                body: JSON.stringify(payload),
-            });
+            let fetchResult;
+            try {
+                fetchResult = await fetch('.', {
+                    method: 'POST',
+                    headers: new Headers({
+                        'Content-Type': 'application/json'
+                    }),
+                    body: JSON.stringify(payload),
+                });
+            } catch (err) {
+                alert('找不到主機');
+                return;
+            }
             if (fetchResult.status !== 200) {
                 console.log(fetchResult.status);
                 return;
