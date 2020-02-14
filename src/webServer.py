@@ -3,11 +3,17 @@
 
 import typing
 import os
+import sys
 import random
+import asyncio
 # https://pgjones.gitlab.io/quart/source/quart.static.html
 import quart
 import utils.novice
 from tgkream.tgTool import tgTodoFunc
+import webApi.adTool.sendAdPhoto
+
+
+_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 
 class _fakeSession():
@@ -61,7 +67,6 @@ class _controller():
     def home(app) -> None:
         def _getDefaultPageSession() -> dict:
             return {
-                'runing': False,
                 'latestStatus': None
             }
 
@@ -80,6 +85,62 @@ class _controller():
 
     def _apiError(statusCode, message):
         return quart.jsonify({'message': message}), statusCode
+
+    def home__Po(app) -> None:
+        @app.route('/' , methods=['POST'])
+        async def _home__Po():
+            if not _wwwAuth.verifyAuth(quart.request.authorization):
+                return _controller._apiError(401, '未登入。')
+
+            pageId = quart.request.cookies.get('pageId')
+            pageSession = _session.get(pageId)
+
+            if pageSession == None:
+                return _controller._apiError(404, '頁面識別碼過期。')
+
+            try:
+                # if data == None & to use "data" -> TypeError
+                data = await quart.request.get_json()
+                method = data['method']
+            except Exception as err:
+                return _controller._apiError(
+                    400,
+                    '請求參數值錯誤。 ({}: {})'.format(type(err), err)
+                )
+
+            try:
+                methodFunc = None
+                if method == 'paperSlipAction':
+                    methodFunc = apiPaperSlipAction
+
+                if methodFunc != None:
+                    return await methodFunc(pageSession, data)
+                else:
+                    return _controller._apiError(404, '請求方法不存在。')
+            except Exception as err:
+                return _controller._apiError(400, '{}: {}'.format(type(err), err))
+
+        async def apiPaperSlipAction(pageSession, data):
+            niUsersStatusInfo = tgTodoFunc.getNiUsersStatusInfo()
+            if niUsersStatusInfo['allCount'] - niUsersStatusInfo['lockCount'] > 0:
+                try:
+                    # if data == None & to use "data" -> TypeError
+                    newData = {
+                        'forwardPeerList': data['forwardPeerList'],
+                        'mainGroup': data['mainGroup'],
+                        'messageId': data['messageId'],
+                    }
+                except Exception as err:
+                    return _controller._apiError(400, '請求參數值錯誤。 ({}: {})'.format(type(err), err))
+
+                asyncio.ensure_future(webApi.adTool.sendAdPhoto.asyncRun(pageSession, newData, _dirname))
+                return quart.jsonify({
+                    'message': '請求已接收。'
+                }), 200
+            else:
+                return quart.jsonify({
+                    'message': '工具目前無法使用。',
+                }), 200
 
     def api_latestStatus__Po(app) -> None:
         @app.route('/api/latestStatus' , methods=['POST'])
@@ -112,6 +173,7 @@ def main() -> None:
     )
 
     _controller.home(app)
+    _controller.home__Po(app)
     _controller.api_latestStatus__Po(app)
 
     app.run(host = '0.0.0.0', port = 5000, debug=True)

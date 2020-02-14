@@ -50,6 +50,8 @@
 
 (_ => {
     const helFormRoomIds = document.querySelector('.cPaperSlip_form_roomIds > .makeInput');
+    const helFormSourceRoomId = document.querySelector('.cPaperSlip_form_sourceRoomId > .makeInput');
+    const helFormSourceMessageId = document.querySelector('.cPaperSlip_form_sourceMessageId > .makeInput');
 
     function _csvParse(csvData) {
         let currMatch, currMatch_3;
@@ -95,6 +97,31 @@
                 (helFormRoomIds.value === '' ? '' : ',')
                 + roomIds.join(',')
             ;
+        })
+    ;
+
+    document.querySelector('.cPaperSlip_form_submit')
+        .addEventListener('click', async function (evt) {
+            evt.preventDefault();
+            const payload = {
+                method: 'paperSlipAction',
+                forwardPeerList: helFormRoomIds.value.split(','),
+                mainGroup: helFormSourceRoomId.value,
+                messageId: parseInt(helFormSourceMessageId.value),
+            };
+            const fetchResult = await fetch('.', {
+                method: 'POST',
+                headers: new Headers({
+                    'Content-Type': 'application/json'
+                }),
+                body: JSON.stringify(payload),
+            });
+            if (fetchResult.status !== 200) {
+                console.log(fetchResult.status);
+                return;
+            }
+            let data = await fetchResult.json();
+            document.querySelector('.cStatusInfo_latest').innerText = data.message;
         })
     ;
 })();
