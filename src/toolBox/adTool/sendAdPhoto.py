@@ -3,7 +3,6 @@
 
 import typing
 import os
-import datetime
 import json
 import asyncio
 import utils.novice
@@ -66,8 +65,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             waitTimeSec = err.seconds
             print("FloodWaitError: wait {} seconds.".format(waitTimeSec))
             myInfo = await client.get_me()
-            maturityDate = datetime.datetime.now() \
-                + datetime.timedelta(seconds = waitTimeSec)
+            maturityDate = utils.novice.dateNowAfter(seconds = waitTimeSec)
             tgTool.chanDataNiUsers.pushBandData(myInfo.phone, maturityDate)
             await tgTool.reinit()
         except telethon.errors.ChatWriteForbiddenError as err:

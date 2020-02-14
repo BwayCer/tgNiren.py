@@ -73,6 +73,24 @@ def dateStringify(dt: datetime.datetime) -> str:
 def dateNow() -> datetime.datetime:
     return datetime.datetime.now()
 
+def dateNowAfter(
+        microseconds = 0,
+        milliseconds = 0,
+        seconds = 0,
+        minutes = 0,
+        hours = 0,
+        days = 0,
+        weeks = 0) -> datetime.datetime:
+    return datetime.datetime.now() + datetime.timedelta(
+        microseconds = microseconds,
+        milliseconds = milliseconds,
+        seconds = seconds,
+        minutes = minutes,
+        hours = hours,
+        days = days,
+        weeks = weeks
+    )
+
 def dateNowTimestamp() -> int:
     return dateTimestamp(dateNow())
 
