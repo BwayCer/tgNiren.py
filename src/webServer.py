@@ -67,6 +67,7 @@ class _controller():
     def home(app) -> None:
         def _getDefaultPageSession() -> dict:
             return {
+                'runing': False,
                 'latestStatus': None
             }
 
@@ -122,7 +123,11 @@ class _controller():
 
         async def apiPaperSlipAction(pageSession, data):
             niUsersStatusInfo = tgTodoFunc.getNiUsersStatusInfo()
-            if niUsersStatusInfo['allCount'] - niUsersStatusInfo['lockCount'] > 0:
+            if pageSession['runing']:
+                return quart.jsonify({
+                    'message': '工具執行中。'
+                }), 200
+            elif niUsersStatusInfo['allCount'] - niUsersStatusInfo['lockCount'] > 0:
                 try:
                     # if data == None & to use "data" -> TypeError
                     newData = {
