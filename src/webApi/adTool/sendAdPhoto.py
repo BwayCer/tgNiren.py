@@ -25,13 +25,14 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
     pageSession['runing'] = True
 
     ynContinue = True
+    usedClientCount = 3
     try:
         pageSession['latestStatus'] = '炸群進度： 初始化...'
         tgTool = TgBaseTool(
             _env['apiId'],
             _env['apiHash'],
             sessionDirPath = _dirname + '/' + _env['tgSessionDirPath'],
-            clientCount = 3,
+            clientCount = usedClientCount,
             papaPhone = _env['papaPhoneNumber']
         )
         await tgTool.init()
@@ -48,8 +49,17 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
         runId = tgTool.getRandId()
         finalPeers = _filterGuy(tgTool, forwardPeers)
         finalPeersLength = len(finalPeers)
+        bandNiUserList = []
         idx = 0
-        async for client in tgTool.iterPickClient(-1, 1):
+        async for clientInfo in tgTool.iterPickClient(-1, 1, whichNiUsers = True):
+            myId = clientInfo['id']
+            client = clientInfo['client']
+
+            if utils.novice.indexOf(bandNiUserList, myId) != -1:
+                if len(bandNiUserList) == usedClientCount:
+                    break
+                continue
+
             if finalPeersLength <= idx:
                 break
 
@@ -72,9 +82,11 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                     idx,
                     finalPeersLength
                 )
-                print('(runId: {}) ok: {}/{}'.format(runid, idx, finalPeersLength))
+                print('(runid: {}) ok: {}/{}'.format(runid, idx, finalPeersLength))
             except telethon.errors.MessageIdInvalidError as err:
-                print('(runId: {}) MessageIdInvalidError: {}'.format(runid, err))
+                print('(runid: {}) {} get MessageIdInvalidError: {}'.format(
+                    runid, myId, err
+                ))
                 raise err
             except telethon.errors.FloodWaitError as err:
                 waitTimeSec = err.seconds
@@ -85,19 +97,22 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                 await tgTool.reinit()
             except telethon.errors.ChatWriteForbiddenError as err:
                 # You can't write in this chat
-                print('(runId: {}) ChatWriteForbiddenError: {}'.format(runid, err))
+                print('(runid: {}) {} get ChatWriteForbiddenError: {}'.format(runid, myId, err))
                 tgTool.chanData.pushGuy(
                     await client.get_entity(forwardPeer),
                     err
                 )
                 idx += 1
             except Exception as err:
-                print('(runId: {}) {} Error: {} (target group: {})'.format(
-                    runid, type(err), err, forwardPeer
+                print('(runid: {}) {} get {} Error: {} (target group: {})'.format(
+                    runid, myId, type(err), err, forwardPeer
                 ))
                 idx += 1
 
-        pageSession['latestStatus'] += ' (結束)'
+        if len(bandNiUserList) == usedClientCount:
+            pageSession['latestStatus'] += ' (仿用戶用盡)'
+        else:
+            pageSession['latestStatus'] += ' (結束)'
     except Exception as err:
         pageSession['latestStatus'] += ' (失敗)\n{} Error: {} (target group: {})'.format(type(err), err, forwardPeer)
     finally:

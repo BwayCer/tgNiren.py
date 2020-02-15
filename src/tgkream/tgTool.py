@@ -396,7 +396,8 @@ class _TgNiUsers():
     # 因而無法自動回復 `self._currentClient` 的原始值
     async def iterPickClient(self,
             circleLimit: int = 1,
-            circleInterval: float = 1) -> TelegramClient:
+            circleInterval: float = 1,
+            whichNiUsers: bool = False) -> TelegramClient:
         if not (circleLimit == -1 or 0 < circleLimit):
             return
 
@@ -419,8 +420,16 @@ class _TgNiUsers():
                 else:
                     prevTimeMs = nowTimeMs
 
+            clientInfo = clientInfoList[pickIdx]
             self._currentClient = clientInfoList[pickIdx]['client']
-            yield self._currentClient
+            if whichNiUsers:
+                yield {
+                    'id':clientInfo['id'],
+                    'userId': clientInfo['userId'],
+                    'client': self._currentClient,
+                }
+            else:
+                yield self._currentClient
 
             idxLoop += 1
             if 0 < maxLoopTimes and maxLoopTimes <= idxLoop:
