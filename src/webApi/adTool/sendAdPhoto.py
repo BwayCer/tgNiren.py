@@ -51,6 +51,7 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
         finalPeersLength = len(finalPeers)
         bandNiUserList = []
         idx = 0
+        # TODO 越來越容易被封 但至少也能傳近乎 200 則 所以暫且不先延長時間
         async for clientInfo in tgTool.iterPickClient(-1, 1, whichNiUsers = True):
             myId = clientInfo['id']
             client = clientInfo['client']
@@ -64,7 +65,6 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                 break
 
             forwardPeer = finalPeers[idx]
-            # TODO 不太會被封 需再測試才能確定 try cache 語句是否有錯誤
             try:
                 typeName = await tgTool.getPeerTypeName(forwardPeer)
                 if typeName != 'User':
@@ -90,11 +90,21 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                 raise err
             except telethon.errors.FloodWaitError as err:
                 waitTimeSec = err.seconds
-                print('(runId: {}) FloodWaitError: wait {} seconds.'.format(runid, waitTimeSec))
-                myId = (await client.get_me()).phone
-                maturityDate = utils.novice.dateNowAfter(seconds = waitTimeSec)
+                print('(runid: {}) {} get FloodWaitError: wait {} seconds.'.format(runid, myId, waitTimeSec))
+                # TODO 秒數待驗證
+                if waitTimeSec < 180:
+                    await asyncio.sleep(waitTimeSec)
+                else:
+                    maturityDate = utils.novice.dateNowAfter(seconds = waitTimeSec)
+                    tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
+                    bandNiUserList.append(myId)
+            except telethon.errors.PeerFloodError as err:
+                # 限制發送請求 Too many requests
+                print('(runid: {}) {} get PeerFloodError: wait 1 hour.'.format(runid, myId))
+                # TODO 12 小時只是估計值
+                maturityDate = utils.novice.dateNowAfter(hours = 12)
                 tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
-                await tgTool.reinit()
+                bandNiUserList.append(myId)
             except telethon.errors.ChatWriteForbiddenError as err:
                 # You can't write in this chat
                 print('(runid: {}) {} get ChatWriteForbiddenError: {}'.format(runid, myId, err))
@@ -107,7 +117,8 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                 print('(runid: {}) {} get {} Error: {} (target group: {})'.format(
                     runid, myId, type(err), err, forwardPeer
                 ))
-                idx += 1
+                # 預防性處理，避免相同錯誤一值迴圈
+                bandNiUserList.append(myId)
 
         if len(bandNiUserList) == usedClientCount:
             pageSession['latestStatus'] += ' (仿用戶用盡)'
