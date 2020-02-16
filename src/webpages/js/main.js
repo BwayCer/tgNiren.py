@@ -56,8 +56,7 @@
 
 (_ => {
     const helFormRoomIds = document.querySelector('.cPaperSlip_form_roomIds > .makeInput');
-    const helFormSourceRoomId = document.querySelector('.cPaperSlip_form_sourceRoomId > .makeInput');
-    const helFormSourceMessageId = document.querySelector('.cPaperSlip_form_sourceMessageId > .makeInput');
+    const helFormSourceLink = document.querySelector('.cPaperSlip_form_sourceLink > .makeInput');
 
     function _csvParse(csvData) {
         let currMatch, currMatch_3;
@@ -106,14 +105,26 @@
         })
     ;
 
+    let _regexWord = /\w/;
+    let _regexSourceLink = /^https:\/\/t\.me\/([^\/]+)\/(\d+)$/;
     document.querySelector('.cPaperSlip_form_submit')
         .addEventListener('click', async function (evt) {
             evt.preventDefault();
+            let roomIdsTxt = helFormRoomIds.value;
+            if (!_regexWord.test(roomIdsTxt)) {
+                alert('請填寫用戶/群組 ID');
+                return;
+            }
+            let matchSourceLinkTxt = helFormSourceLink.value.match(_regexSourceLink);
+            if (matchSourceLinkTxt === null) {
+                alert('來源鏈結格式錯誤');
+                return;
+            }
             const payload = {
                 method: 'paperSlipAction',
-                forwardPeerList: helFormRoomIds.value.split(','),
-                mainGroup: helFormSourceRoomId.value,
-                messageId: parseInt(helFormSourceMessageId.value),
+                forwardPeerList: roomIdsTxt.split(','),
+                mainGroup: matchSourceLinkTxt[1],
+                messageId: parseInt(matchSourceLinkTxt[2]),
             };
             let fetchResult;
             try {

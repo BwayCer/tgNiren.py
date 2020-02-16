@@ -18,7 +18,7 @@ body {
 .cPaperSlip_form {
   content: "";
 }
-.cPaperSlip_form .cPaperSlip_form_submit, .cPaperSlip_form .cPaperSlip_form_sourceMessageId, .cPaperSlip_form .cPaperSlip_form_sourceRoomId, .cPaperSlip_form .cPaperSlip_form_roomIds {
+.cPaperSlip_form .cPaperSlip_form_submit, .cPaperSlip_form .cPaperSlip_form_sourceLink, .cPaperSlip_form .cPaperSlip_form_roomIds {
   margin: 0.4em;
   display: block;
 }

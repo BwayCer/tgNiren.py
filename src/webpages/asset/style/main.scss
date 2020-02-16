@@ -43,10 +43,7 @@ body {
         }
       }
     }
-    &_sourceRoomId {
-      @extend %scFormChild;
-    }
-    &_sourceMessageId {
+    &_sourceLink {
       @extend %scFormChild;
     }
     &_submit {
