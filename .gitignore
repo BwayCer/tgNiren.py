@@ -1,4 +1,6 @@
 
+.dockerignore
+
 **/__pycache__/
 Pipfile.lock
 .venv
