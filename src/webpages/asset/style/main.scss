@@ -1,0 +1,58 @@
+
+body {
+  font-family: 'Noto Sans TC';
+}
+
+
+.cStatusInfo {
+  padding: 1em;
+}
+.cPaperSlip {
+  padding: 1em;
+
+  &_title {
+    margin: 0.6em 0 1em;
+
+    span {
+      font-size: 1.4em;
+    }
+  }
+  &_form {
+    %scFormChild {
+      margin: 0.4em;
+      display: block;
+    }
+
+    content: "";
+
+    &_roomIds {
+      @extend %scFormChild;
+
+      .makeInput {
+        width: 18em;
+      }
+
+      &_csvUpload {
+        display: block;
+
+        span {
+          font-size: 0.6em;
+        }
+        .makeInput {
+          vertical-align: middle;
+        }
+      }
+    }
+    &_sourceLink {
+      @extend %scFormChild;
+    }
+    &_submit {
+      @extend %scFormChild;
+    }
+    .makeInput {
+      margin-left: 1em;
+      padding: 0.2em;
+    }
+  }
+}
+

@@ -3,7 +3,6 @@
 
 import typing
 import os
-import datetime
 import json
 import asyncio
 import utils.novice
@@ -66,8 +65,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             waitTimeSec = err.seconds
             print("FloodWaitError: wait {} seconds.".format(waitTimeSec))
             myInfo = await client.get_me()
-            maturityDate = datetime.datetime.now() \
-                + datetime.timedelta(seconds = waitTimeSec)
+            maturityDate = utils.novice.dateNowAfter(seconds = waitTimeSec)
             tgTool.chanDataNiUsers.pushBandData(myInfo.phone, maturityDate)
             await tgTool.reinit()
         except telethon.errors.ChatWriteForbiddenError as err:
@@ -103,7 +101,7 @@ async def _sendFile(tgTool: TgBaseTool, group: str, url: str, msg: str = '') -> 
     return messageId
 
 def _filterGuy(tgTool: TgBaseTool, mainList: typing.List[str]) -> typing.List[str]:
-    blackGuyList = tgTool.chanData.get('.blackGuy.list')
+    blackGuyList = tgTool.chanData.data['blackGuy']['list']
     newList = []
     for peer in mainList:
         if utils.novice.indexOf(blackGuyList, peer) == -1:

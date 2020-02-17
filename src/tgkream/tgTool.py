@@ -14,7 +14,7 @@ import utils.novice
 import tgkream.errors as errors
 
 
-__all__ = ['TgBaseTool']
+__all__ = ['TgBaseTool', 'tgTodoFunc']
 
 
 TelegramClient = telethon.TelegramClient
@@ -47,26 +47,25 @@ class _TgChanData_NiUsers():
 
         self.chanData = utils.chanData.ChanData()
         if self.chanData.getSafe('.niUsers') == None:
-            self.chanData.set('.niUsers', {
+            self.chanData.data['niUsers'] = {
                 'cemetery': [],
                 'bandInfos': [],
                 'bandList': [],
                 'lockList': [],
-            })
+            }
         else:
             self.updateBandInfo()
 
         self._papaPhone = papaPhone
         self.pickPhones = []
 
-    @utils.chanData.ChanData.dFakeLockSet(memberPath = '.niUsers', ysStore = True)
-    def updateBandInfo(self) -> dict:
-        niUsers = self.chanData.get('.niUsers')
+    def updateBandInfo(self) -> None:
+        niUsers = self.chanData.data['niUsers']
 
         bandInfos = niUsers['bandInfos']
         bandInfosLength = len(bandInfos)
         if bandInfosLength == 0:
-            return niUsers
+            return
 
         bands = niUsers['bandList']
         nowTimeMs = utils.novice.dateNowTimestamp()
@@ -76,7 +75,7 @@ class _TgChanData_NiUsers():
                 del bandInfos[idx]
                 bands.remove(bandInfo['id'])
 
-        return niUsers
+        self.chanData.store()
 
     _regexSessionName = r'^telethon-(\d+).session$'
 
@@ -98,9 +97,13 @@ class _TgChanData_NiUsers():
             path += '.session'
         return path
 
-    @utils.chanData.ChanData.dFakeLockSet(memberPath = '.niUsers', ysStore = True)
-    def _pushCemeteryData_chanData(self, phoneNumber: str) -> list:
-        niUsers = self.chanData.get('.niUsers')
+    def pushCemeteryData(self, phoneNumber: str, err: Exception) -> None:
+        sessionPath = self.getSessionPath(phoneNumber)
+        if os.path.exists(sessionPath):
+            os.remove(sessionPath)
+
+        self._pushCemeteryData_chanData(phoneNumber)
+        niUsers = self.chanData.data['niUsers']
 
         locks = niUsers['lockList']
         locksIdx = utils.novice.indexOf(locks, phoneNumber)
@@ -119,52 +122,39 @@ class _TgChanData_NiUsers():
                     del bandInfos[bandInfosIdx]
                     break
 
-        return niUsers
+        niUsers['cemetery'].append({
+            'id': phoneNumber,
+            'message': '{} Error: {}'.format(type(err), err),
+        })
 
-    def pushCemeteryData(self, phoneNumber: str, err: Exception) -> bool:
-        sessionPath = self.getSessionPath(phoneNumber)
-        if os.path.exists(sessionPath):
-            os.remove(sessionPath)
-            self._pushCemeteryData_chanData(phoneNumber)
-            return self.chanData.opt('jsonarrappend', '.niUsers.cemetery', {
-                'id': phoneNumber,
-                'message': '{} Error: {}'.format(type(err), err),
-            })
         self.chanData.store()
-        return False
 
     def pushBandData(self, phoneNumber: str, dt: datetime.datetime) -> bool:
-        bands = self.chanData.get('.niUsers.bandList')
+        niUsers = self.chanData.data['niUsers']
+        bands = niUsers['bandList']
         if utils.novice.indexOf(bands, phoneNumber) == -1:
-            self.chanData.opt('jsonarrappend', '.niUsers.bandList', phoneNumber)
-            return self.chanData.opt('jsonarrappend', '.niUsers.bandInfos', {
+            bands.append(phoneNumber)
+            niUsers['bandInfos'].append({
                 'id': phoneNumber,
                 'bannedWaitDate': utils.novice.dateStringify(dt),
                 'bannedWaitTimeMs': utils.novice.dateTimestamp(dt)
             })
         return False
 
-    @utils.chanData.ChanData.dFakeLockSet(memberPath = '.niUsers.lockList', maxTimes = 1)
-    def _lockPhone_chanData(self, lockList: list) -> list:
-        return lockList
-
     def lockPhone(self, phoneNumber: str) -> bool:
-        locks = self.chanData.get('.niUsers.lockList')
+        locks = self.chanData.data['niUsers']['lockList']
         if utils.novice.indexOf(locks, phoneNumber) == -1:
             locks.append(phoneNumber)
-            if self._lockPhone_chanData(locks):
-                self.pickPhones.append(phoneNumber)
-                return True
+            self.pickPhones.append(phoneNumber)
+            return True
         return False
 
-    @utils.chanData.ChanData.dFakeLockSet(memberPath = '.niUsers.lockList')
-    def _unlockPhones_chanData(self, lockPhoneList: list) -> list:
-        locks = self.chanData.get('.niUsers.lockList')
+    def _unlockPhones_chanData(self, lockPhoneList: list) -> None:
+        locks = self.chanData.data['niUsers']['lockList']
         for phoneNumber in lockPhoneList:
             phoneIdx = utils.novice.indexOf(locks, phoneNumber)
             if phoneIdx != -1:
                 del locks[phoneIdx]
-        return locks
 
     def unlockPhones(self, *args):
         pickPhones = self.pickPhones
@@ -182,15 +172,15 @@ class _TgChanData_NiUsers():
 
 class _TgChanData(utils.chanData.ChanData):
     def __init__(self):
+        utils.chanData.ChanData.__init__(self)
         if self.getSafe('.blackGuy') == None:
-            self.set('.blackGuy', {
+            self.data['blackGuy'] = {
                 'infos': [],
                 'list': [],
-            })
+            }
 
-    @utils.chanData.ChanData.dFakeLockSet(memberPath = '.blackGuy', ysStore = True)
-    def pushGuy(self, peer: TgTypeing.Peer, err: Exception) -> dict:
-        blackGuy = self.get('.blackGuy')
+    def pushGuy(self, peer: TgTypeing.Peer, err: Exception) -> None:
+        blackGuy = self.data['blackGuy']
         blackGuyInfos = blackGuy['infos']
         blackGuyList = blackGuy['list']
 
@@ -206,7 +196,7 @@ class _TgChanData(utils.chanData.ChanData):
                 'message': '{} Error: {}'.format(type(err), err),
             })
 
-        return blackGuy
+            self.chanData.store()
 
 
 class _TgNiUsers():
@@ -233,7 +223,7 @@ class _TgNiUsers():
         # 異常退出時執行
         @utils.novice.dOnExit
         def onExit():
-            self.release()
+            asyncio.run(self.release())
 
     async def init(self) -> None:
         clientCount = self.clientCount
@@ -250,7 +240,7 @@ class _TgNiUsers():
             if idxLoop % 3 == 0:
                 usablePhones = chanDataNiUsers.getUsablePhones()
 
-            niUsers = chanDataNiUsers.chanData.get('.niUsers')
+            niUsers = chanDataNiUsers.chanData.data['niUsers']
             bands = niUsers['bandList']
             locks = niUsers['lockList']
 
@@ -340,12 +330,15 @@ class _TgNiUsers():
 
         return client
 
-    def release(self, *args):
-        self._clientInfoList.clear()
+    async def release(self, *args):
+        clientInfoList = self._clientInfoList
+        for clientInfo in clientInfoList:
+            await clientInfo['client'].disconnect()
+        clientInfoList.clear()
         self.chanDataNiUsers.unlockPhones(*args)
 
     async def reinit(self):
-        self.release()
+        await self.release()
         await self.init()
 
     def lookforClientInfo(self,
@@ -403,7 +396,8 @@ class _TgNiUsers():
     # 因而無法自動回復 `self._currentClient` 的原始值
     async def iterPickClient(self,
             circleLimit: int = 1,
-            circleInterval: float = 1) -> TelegramClient:
+            circleInterval: float = 1,
+            whichNiUsers: bool = False) -> TelegramClient:
         if not (circleLimit == -1 or 0 < circleLimit):
             return
 
@@ -426,8 +420,16 @@ class _TgNiUsers():
                 else:
                     prevTimeMs = nowTimeMs
 
+            clientInfo = clientInfoList[pickIdx]
             self._currentClient = clientInfoList[pickIdx]['client']
-            yield self._currentClient
+            if whichNiUsers:
+                yield {
+                    'id':clientInfo['id'],
+                    'userId': clientInfo['userId'],
+                    'client': self._currentClient,
+                }
+            else:
+                yield self._currentClient
 
             idxLoop += 1
             if 0 < maxLoopTimes and maxLoopTimes <= idxLoop:
@@ -548,4 +550,25 @@ class TgBaseTool(_TgNiUsers):
             pickIdx += pageAmount
 
         return (pickRealIdx, users)
+
+
+# TODO 因時程關係未拆分程式碼
+
+import os
+import sys
+
+_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
+_env = utils.json.loadYml(_dirname + '/env.yml')
+
+class tgTodoFunc():
+    def getNiUsersStatusInfo():
+        chanDataNiUsers = _TgChanData_NiUsers(
+            _dirname + '/' + _env['tgSessionDirPath'],
+            _env['papaPhoneNumber']
+        )
+        usablePhones = chanDataNiUsers.getUsablePhones()
+        niUsers = chanDataNiUsers.chanData.data['niUsers']
+        bands = niUsers['bandList']
+        locks = niUsers['lockList']
+        return {'allCount': len(usablePhones), 'lockCount':  len(bands) + len(locks)}
 

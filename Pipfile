@@ -7,10 +7,8 @@ verify_ssl = true
 
 [packages]
 pyyaml = "*"
-six = "*"
-redis = "*"
-rejson = "*"
 telethon = "*"
+quart = "*"
 
 [requires]
 python_version = "3"
