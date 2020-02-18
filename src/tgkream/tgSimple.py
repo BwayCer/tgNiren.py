@@ -27,30 +27,74 @@ class TgSimple(TgSession):
 
     # if phoneNumber == '+8869xxx', input '8869xxx' (str)
     async def login(self, phoneNumber: str) -> typing.Union[None, TelegramClient]:
+        print('-> login +{}'.format(phoneNumber))
         sessionPath = self.getSessionPath(phoneNumber)
 
         if not os.path.exists(sessionPath):
-            raise errors.UserNotAuthorized(
-                errors.errMsg.SessionFileNotExistsTemplate.format(phoneNumber)
-            )
+            print(errors.errMsg.SessionFileNotExistsTemplate.format(phoneNumber))
 
+        ynLoginContinue = True
         client = TelegramClient(
             self.getSessionPath(phoneNumber, noExt = True),
             self._apiId,
             self._apiHash
         )
         try:
+            print('--> client.connect')
             await client.connect()
-        # except tele.errors.PhoneNumberBannedError as err:
-            # print('rm telethon-{}.*'.format(phoneNumber))
+        except telethon.errors.PhoneNumberBannedError as err:
+            ynLoginContinue = False
+            print('The phone {} is Banned.'.format(phoneNumber))
+            print('please run `rm {}*`'.format(sessionPath))
         except Exception as err:
-            print('{} Error: {}', type(err), err)
+            print('{} Error: {} '.format(type(err), err))
             raise err
 
-        if not await client.is_user_authorized():
-            raise errors.UserNotAuthorized(
-                errors.errMsg.UserNotAuthorizedTemplate.format(phoneNumber)
-            )
+        if ynLoginContinue:
+            print('--> client.is_user_authorized')
+            if not await client.is_user_authorized():
+                print(errors.errMsg.UserNotAuthorizedTemplate.format(phoneNumber))
+                print('--> client.send_code_request')
+                try:
+                    await client.send_code_request(phoneNumber)
+                    verifiedCode = input('login {}, Enter the code: '.format(phoneNumber))
+                    if verifiedCode == '':
+                        return None
+                    else:
+                        print('--> client.sign_in {} with {} verifiedCode'.format(phoneNumber, verifiedCode))
+                        await client.sign_in(phoneNumber, verifiedCode)
+                except telethon.errors.rpcerrorlist.PhoneCodeInvalidError as err:
+                    print('無效的驗證碼，驗證失敗。')
+                    ynLoginContinue = False
+                except Exception as err:
+                    print('{} Error: {} '.format(type(err), err))
+                    raise err
 
-        return client
+        print('--- login +{} {} ---'.format(
+            phoneNumber,
+            'success' if ynLoginContinue else 'failed'
+        ))
+        return client if ynLoginContinue else None
+
+    async def loginPick(self, phoneNumbersTxt: str) -> list:
+        print('--- loginPick start ---')
+        phoneNumbers = phoneNumbersTxt.split(',')
+        clientInfoList = []
+
+        for idx in range(len(phoneNumbers)):
+            phoneNumber = phoneNumbers[idx]
+
+            clientInfo = None
+            if phoneNumber != '':
+                client = await self.login(phoneNumber)
+                myInfo = await client.get_me()
+                self._clientInfoList.append({
+                    'id': myInfo.phone,
+                    'userId': myInfo.id,
+                    'client': client,
+                })
+            clientInfoList[idx] = clientInfo
+
+        print('--- loginPick end ---')
+        return clientInfoList
 
