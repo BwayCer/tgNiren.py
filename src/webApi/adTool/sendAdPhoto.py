@@ -82,15 +82,15 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                     idx,
                     finalPeersLength
                 )
-                print('(runid: {}) ok: {}/{}'.format(runid, idx, finalPeersLength))
+                print('(runId: {}) ok: {}/{}'.format(runId, idx, finalPeersLength))
             except telethon.errors.MessageIdInvalidError as err:
-                print('(runid: {}) {} get MessageIdInvalidError: {}'.format(
-                    runid, myId, err
+                print('(runId: {}) {} get MessageIdInvalidError: {}'.format(
+                    runId, myId, err
                 ))
                 raise err
             except telethon.errors.FloodWaitError as err:
                 waitTimeSec = err.seconds
-                print('(runid: {}) {} get FloodWaitError: wait {} seconds.'.format(runid, myId, waitTimeSec))
+                print('(runId: {}) {} get FloodWaitError: wait {} seconds.'.format(runId, myId, waitTimeSec))
                 # TODO 秒數待驗證
                 if waitTimeSec < 180:
                     await asyncio.sleep(waitTimeSec)
@@ -100,22 +100,22 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                     bandNiUserList.append(myId)
             except telethon.errors.PeerFloodError as err:
                 # 限制發送請求 Too many requests
-                print('(runid: {}) {} get PeerFloodError: wait 1 hour.'.format(runid, myId))
+                print('(runId: {}) {} get PeerFloodError: wait 1 hour.'.format(runId, myId))
                 # TODO 12 小時只是估計值
                 maturityDate = utils.novice.dateNowAfter(hours = 12)
                 tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
                 bandNiUserList.append(myId)
             except telethon.errors.ChatWriteForbiddenError as err:
                 # You can't write in this chat
-                print('(runid: {}) {} get ChatWriteForbiddenError: {}'.format(runid, myId, err))
+                print('(runId: {}) {} get ChatWriteForbiddenError: {}'.format(runId, myId, err))
                 tgTool.chanData.pushGuy(
                     await client.get_entity(forwardPeer),
                     err
                 )
                 idx += 1
             except Exception as err:
-                print('(runid: {}) {} get {} Error: {} (target group: {})'.format(
-                    runid, myId, type(err), err, forwardPeer
+                print('(runId: {}) {} get {} Error: {} (target group: {})'.format(
+                    runId, myId, type(err), err, forwardPeer
                 ))
                 # 預防性處理，避免相同錯誤一值迴圈
                 bandNiUserList.append(myId)

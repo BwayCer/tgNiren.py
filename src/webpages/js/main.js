@@ -128,7 +128,7 @@
             };
             let fetchResult;
             try {
-                fetchResult = await fetch('.', {
+                fetchResult = await fetch('/', {
                     method: 'POST',
                     headers: new Headers({
                         'Content-Type': 'application/json'
