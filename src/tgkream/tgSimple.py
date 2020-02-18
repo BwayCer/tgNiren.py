@@ -3,8 +3,11 @@
 
 import typing
 import os
+import random
+import asyncio
 import telethon.sync as telethon
 import tgkream.errors as errors
+import utils.novice
 from tgkream.utils import TgTypeing, TgSession
 
 
@@ -97,4 +100,26 @@ class TgSimple(TgSession):
 
         print('--- loginPick end ---')
         return clientInfoList
+
+    def getRandId(self):
+        return random.randrange(1000000, 9999999)
+
+    async def iterLoopInterval(self, length: int, circleInterval: float = 1) -> None:
+        prevTimeMs = utils.novice.dateNowTimestamp()
+        idxLoop = 0
+        while True:
+            if circleInterval > 0 and idxLoop != 0:
+                nowTimeMs = utils.novice.dateNowTimestamp()
+                intervalTimeMs = circleInterval - ((nowTimeMs - prevTimeMs) / 1000)
+                if intervalTimeMs > 0:
+                    print('wait {} second'.format(intervalTimeMs))
+                    await asyncio.sleep(intervalTimeMs)
+                    prevTimeMs = utils.novice.dateNowTimestamp()
+                else:
+                    prevTimeMs = nowTimeMs
+
+            yield idxLoop
+            idxLoop += 1
+            if 0 < length and length <= idxLoop:
+                break
 
