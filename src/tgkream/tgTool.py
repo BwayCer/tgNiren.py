@@ -5,45 +5,24 @@ import typing
 import os
 import datetime
 import random
-import re
 import asyncio
 import contextlib
 import telethon.sync as telethon
 import utils.chanData
 import utils.novice
 import tgkream.errors as errors
+from tgkream.utils import TgTypeing, TgSession
 
 
-__all__ = ['TgBaseTool', 'tgTodoFunc']
+__all__ = ['errors', 'TgTypeing', 'TgBaseTool', 'tgTodoFunc']
 
 
 TelegramClient = telethon.TelegramClient
 
 
-class TgTypeing():
-    Peer = typing.Union[
-        telethon.types.Chat,
-        telethon.types.User,
-        telethon.types.Channel,
-    ]
-    InputPeer = typing.Union[
-        telethon.types.InputPeerEmpty,
-        telethon.types.InputPeerSelf,
-        telethon.types.InputPeerChat,
-        telethon.types.InputPeerUser,
-        telethon.types.InputPeerChannel,
-        telethon.types.InputPeerUserFromMessage,
-        telethon.types.InputPeerChannelFromMessage,
-    ]
-    # Telethon 的 "peer" 欄位能自動判斷 (調用 `get_input_entity()` 方法)
-    AutoInputPeer = typing.Union[str, InputPeer]
-
-
-class _TgChanData_NiUsers():
+class _TgChanData_NiUsers(TgSession):
     def __init__(self, sessionDirPath: str = '', papaPhone: str = ''):
-        self._sessionDirPath = sessionDirPath
-        if not os.path.exists(sessionDirPath):
-            os.makedirs(sessionDirPath)
+        TgSession.__init__(self, sessionDirPath)
 
         self.chanData = utils.chanData.ChanData()
         if self.chanData.getSafe('.niUsers') == None:
@@ -77,25 +56,12 @@ class _TgChanData_NiUsers():
 
         self.chanData.store()
 
-    _regexSessionName = r'^telethon-(\d+).session$'
-
     def getUsablePhones(self) -> list:
-        phones = []
-        files = os.listdir(self._sessionDirPath)
-        for fileName in files:
-            if os.path.isfile(os.path.join(self._sessionDirPath, fileName)):
-                matchTgCode = re.search(self._regexSessionName, fileName)
-                if matchTgCode:
-                    phoneNumber = matchTgCode.group(1)
-                    if phoneNumber != self._papaPhone:
-                        phones.append(phoneNumber)
+        phones = self.getOwnPhones()
+        papaPhoneIdx = utils.novice.indexOf(phones, self._papaPhone)
+        if papaPhoneIdx != -1:
+            del phones[papaPhoneIdx]
         return phones
-
-    def getSessionPath(self, phoneNumber: str, noExt: bool = False):
-        path = self._sessionDirPath + '/telethon-' + phoneNumber
-        if noExt == False:
-            path += '.session'
-        return path
 
     def pushCemeteryData(self, phoneNumber: str, err: Exception) -> None:
         sessionPath = self.getSessionPath(phoneNumber)

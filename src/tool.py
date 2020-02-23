@@ -7,9 +7,12 @@ import re
 _dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 _origArgs = sys.argv
 _pyTool = {
+    'login.interactiveLogin.simple': 'toolBox/login/simple-interactiveLogin',
     'adTool.sendAdPhoto': 'toolBox/adTool/sendAdPhoto',
     'adTool.getParticipants': 'toolBox/adTool/getParticipants',
     'adTool.tuckUserIntoChannel': 'toolBox/adTool/tuckUserIntoChannel',
+    'tgPing.sendMessage.simple': 'toolBox/tgPing/simple-sendMessage',
+    'tgPing.sendForward.simple': 'toolBox/tgPing/simple-sendForward',
 }
 
 if len(_origArgs) == 1:
