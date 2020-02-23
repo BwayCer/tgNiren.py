@@ -32,9 +32,11 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str) -> list:
                 continue
             userIds.append(user.username)
     # except telethon.errors.ValueError as err:
-        # 沒有此群組
+        # 沒有此用戶或群組名稱
     # except telethon.errors.rpcerrorlist.ChannelPrivateError as err:
         # 此群組可能為私人群組或是你被禁止了
+    # except telethon.errors.ChatAdminRequiredError as err:
+        # 此行為被要求要有群組管理員權限或者權限不足
     except Exception as err:
         raise err
 
