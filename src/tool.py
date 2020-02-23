@@ -12,6 +12,7 @@ _pyTool = {
     'adTool.getParticipants': 'toolBox/adTool/getParticipants',
     'adTool.tuckUserIntoChannel': 'toolBox/adTool/tuckUserIntoChannel',
     'tgPing.sendMessage.simple': 'toolBox/tgPing/simple-sendMessage',
+    'tgPing.sendForward.simple': 'toolBox/tgPing/simple-sendForward',
 }
 
 if len(_origArgs) == 1:
