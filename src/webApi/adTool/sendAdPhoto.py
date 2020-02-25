@@ -4,10 +4,8 @@
 import typing
 import os
 import datetime
-import json
 import asyncio
-import utils.novice
-import utils.json
+import utils.novice as novice
 from tgkream.tgTool import TgBaseTool, telethon
 
 
@@ -20,8 +18,6 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
         pageSession['latestStatus'] = '參數錯誤，無法運行命令。'
         return
 
-    _env = utils.json.loadYml(_dirname + '/env.yml')
-
     pageSession['runing'] = True
 
     ynContinue = True
@@ -29,11 +25,11 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
     try:
         pageSession['latestStatus'] = '炸群進度： 初始化...'
         tgTool = TgBaseTool(
-            _env['apiId'],
-            _env['apiHash'],
-            sessionDirPath = _dirname + '/' + _env['tgSessionDirPath'],
+            novice.py_env['apiId'],
+            novice.py_env['apiHash'],
+            sessionDirPath = _dirname + '/' + novice.py_env['tgSessionDirPath'],
             clientCount = usedClientCount,
-            papaPhone = _env['papaPhoneNumber']
+            papaPhone = novice.py_env['papaPhoneNumber']
         )
         await tgTool.init()
     except Exception as err:
@@ -56,7 +52,7 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
             myId = clientInfo['id']
             client = clientInfo['client']
 
-            if utils.novice.indexOf(bandNiUserList, myId) != -1:
+            if novice.indexOf(bandNiUserList, myId) != -1:
                 if len(bandNiUserList) == usedClientCount:
                     break
                 continue
@@ -95,14 +91,14 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                 if waitTimeSec < 180:
                     await asyncio.sleep(waitTimeSec)
                 else:
-                    maturityDate = utils.novice.dateNowAfter(seconds = waitTimeSec)
+                    maturityDate = novice.dateNowAfter(seconds = waitTimeSec)
                     tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
                     bandNiUserList.append(myId)
             except telethon.errors.PeerFloodError as err:
                 # 限制發送請求 Too many requests
                 print('(runId: {}) {} get PeerFloodError: wait 1 hour.'.format(runId, myId))
                 # TODO 12 小時只是估計值
-                maturityDate = utils.novice.dateNowAfter(hours = 12)
+                maturityDate = novice.dateNowAfter(hours = 12)
                 tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
                 bandNiUserList.append(myId)
             except telethon.errors.ChatWriteForbiddenError as err:
@@ -127,7 +123,7 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
     except Exception as err:
         pageSession['latestStatus'] += ' (失敗)\n{} Error: {} (target group: {})'.format(
             type(err),
-            utils.novice.sysTracebackException(),
+            novice.sysTracebackException(),
             forwardPeer
         )
     finally:
@@ -139,7 +135,7 @@ def _filterGuy(tgTool: TgBaseTool, mainList: typing.List[str]) -> typing.List[st
     blackGuyList = tgTool.chanData.data['blackGuy']['list']
     newList = []
     for peer in mainList:
-        if utils.novice.indexOf(blackGuyList, peer) == -1:
+        if novice.indexOf(blackGuyList, peer) == -1:
             newList.append(peer)
     return newList
 

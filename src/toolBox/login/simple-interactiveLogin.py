@@ -2,7 +2,7 @@
 
 
 import asyncio
-import utils.json
+import utils.novice as novice
 from tgkream.tgSimple import TgSimple
 
 
@@ -15,12 +15,10 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str) -> list:
 
     phoneNumber = args[1]
 
-    _env = utils.json.loadYml(_dirname + '/env.yml')
-
     tgTool = TgSimple(
-        _env['apiId'],
-        _env['apiHash'],
-        sessionDirPath = _dirname + '/' + _env['tgSessionDirPath'],
+        novice.py_env['apiId'],
+        novice.py_env['apiHash'],
+        sessionDirPath = _dirname + '/' + novice.py_env['tgSessionDirPath'],
     )
     client = await tgTool.login(phoneNumber)
 

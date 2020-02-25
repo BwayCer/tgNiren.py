@@ -3,10 +3,19 @@
 
 import typing
 import traceback
+import os
 import sys
 import atexit
 import time
 import datetime
+import utils.json
+
+
+py_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+py_env = None
+if os.path.exists(py_dirname + '/env.yml'):
+    py_env = utils.json.loadYml(py_dirname + '/env.yml')
 
 
 # 異常退出時執行

@@ -8,12 +8,9 @@ import random
 import asyncio
 # https://pgjones.gitlab.io/quart/source/quart.static.html
 import quart
-import utils.novice
+import utils.novice as novice
 from tgkream.tgTool import tgTodoFunc
 import webApi.adTool.sendAdPhoto
-
-
-_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 
 class _fakeSession():
@@ -24,7 +21,7 @@ class _fakeSession():
     # TODO 看能不能改成計時器執行
     def expiredCheck(self) -> None:
         sessionData = self._data
-        nowTimeMs = utils.novice.dateNowTimestamp()
+        nowTimeMs = novice.dateNowTimestamp()
         for key in list(sessionData):
             pageData = sessionData[key]
             if pageData['expiryTimestamp'] < nowTimeMs:
@@ -32,9 +29,9 @@ class _fakeSession():
 
     def open(self, pageId: str, pageSession: dict) -> None:
         self.expiredCheck()
-        expiryDate = utils.novice.dateNowAfter(hours = 4)
+        expiryDate = novice.dateNowAfter(hours = 4)
         self._data[pageId] = {
-            'expiryTimestamp': utils.novice.dateTimestamp(expiryDate),
+            'expiryTimestamp': novice.dateTimestamp(expiryDate),
             'data': pageSession,
         }
 
@@ -42,8 +39,8 @@ class _fakeSession():
         sessionData = self._data
         if pageId in sessionData:
             pageData = sessionData[pageId]
-            expiryDate = utils.novice.dateNowAfter(hours = 4)
-            pageData['expiryTimestamp'] = utils.novice.dateTimestamp(expiryDate)
+            expiryDate = novice.dateNowAfter(hours = 4)
+            pageData['expiryTimestamp'] = novice.dateTimestamp(expiryDate)
             return pageData['data']
 
         return None
@@ -138,7 +135,7 @@ class _controller():
                 except Exception as err:
                     return _controller._apiError(400, '請求參數值錯誤。 ({}: {})'.format(type(err), err))
 
-                asyncio.ensure_future(webApi.adTool.sendAdPhoto.asyncRun(pageSession, newData, _dirname))
+                asyncio.ensure_future(webApi.adTool.sendAdPhoto.asyncRun(pageSession, newData, novice.py_dirname))
                 return quart.jsonify({
                     'message': '請求已接收。'
                 }), 200

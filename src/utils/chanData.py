@@ -4,15 +4,12 @@
 import typing
 import os
 import sys
-import utils.novice
+import utils.novice as novice
 import utils.json
 
 
-_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-_env = utils.json.loadYml(_dirname + '/env.yml')
-
-_logFilePath = _dirname + '/' + _env['logFilePath']
-_chanDataFilePath = _dirname + '/' + _env['chanDataFilePath']
+_logFilePath = novice.py_dirname + '/' + novice.py_env['logFilePath']
+_chanDataFilePath = novice.py_dirname + '/' + novice.py_env['chanDataFilePath']
 
 _data = None
 
@@ -55,13 +52,13 @@ class LogNeedle():
 
     def push(self, text: str) -> None:
         logTxt = '-~@~- {}\n{}\n\n'.format(
-            utils.novice.dateStringify(utils.novice.dateNow()),
+            novice.dateStringify(novice.dateNow()),
             text
         )
         with open(_logFilePath, 'a', encoding = 'utf-8') as fs:
             fs.write(logTxt)
 
     def pushException(self) -> bool:
-        logTxt = utils.novice.sysTracebackException()
+        logTxt = novice.sysTracebackException()
         self.push(logTxt)
 
