@@ -33,6 +33,26 @@ def dTryCatch(fn) -> typing.Callable[..., typing.Any]:
             print(sysTracebackException(ysIsWrapTryCatch = True))
     return wrapTryCatch
 
+def sysExceptionInfo() -> dict:
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    callStackList = traceback.extract_tb(exc_tb)
+    stackList = []
+    for idx in range(len(callStackList)):
+        callStack = callStackList[idx]
+        stackList.append('File {}, line {}, in {}'.format(
+            callStack[0],
+            callStack[1],
+            callStack[2]
+        ))
+
+    return {
+        'error': exc_obj,
+        'type': exc_type,
+        'name': exc_type.__name__,
+        'message': str(exc_obj), # exc_obj.args[0]
+        'stackList': stackList,
+    }
+
 def sysTracebackException(
         ysHasTimestamp: bool = False,
         ysIsWrapTryCatch: bool = False) -> str:

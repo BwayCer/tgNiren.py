@@ -10,10 +10,11 @@ import quart
 import utils.novice as novice
 
 
-__all__ = ['Router', 'enableTool', 'innerSession']
+__all__ = ['Router', 'enableTool', 'innerSession', 'wsHouse']
 
 
 innerSession = None
+wsHouse = None
 
 
 class Router():
@@ -46,12 +47,19 @@ class Router():
             **kwargs
         )
 
+    def websocket(self, url: str, controllerPath: str, *args, **kwargs) -> None:
+        action, filePath = self.require(controllerPath)
+        self._app.add_websocket(url, filePath, action, *args, **kwargs)
+
 
 def enableTool(*args):
     for toolName in args:
         if toolName == 'InnerSession':
             global innerSession
             innerSession = _InnerSession()
+        elif toolName == 'WsHouse':
+            global wsHouse
+            wsHouse = _WsHouse()
         else:
             raise Exception('Not found "{}" in serverMix Tool'.format(toolName))
 
@@ -100,4 +108,29 @@ class _InnerSession():
             return pageData['data']
 
         return None
+
+
+class _WsHouse():
+    def __init__(self):
+        self.house = {}
+
+    def open(self, roomName: str, socket) -> None:
+        house = self.house
+        if roomName in house:
+            connectedSockets = house[roomName]
+        else:
+            connectedSockets = house[roomName] = set()
+        connectedSockets.add(socket)
+
+    def close(self, roomName: str, socket) -> None:
+        house = self.house
+        if roomName in house:
+            connectedSockets = house[roomName]
+            connectedSockets.remove(socket)
+
+    async def send(self, roomName: str, payload: typing.Any) -> None:
+        house = self.house
+        if roomName in house:
+            for socket in house[roomName]:
+                await socket.send(payload)
 

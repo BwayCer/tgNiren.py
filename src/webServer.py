@@ -4,6 +4,7 @@
 import os
 import quart
 import webBox.serverMix as serverMix
+import webBox.controller.ws
 
 
 def main() -> None:
@@ -14,12 +15,15 @@ def main() -> None:
         template_folder = './webBox/pages'
     )
 
-    serverMix.enableTool('InnerSession')
+    serverMix.enableTool('InnerSession', 'WsHouse')
 
     router = serverMix.Router(app, 'webBox.controller')
     router.add('GET', '/', 'home.get')
     router.add('POST', '/', 'home.post')
     router.add('POST', '/api/latestStatus', 'home.api_latestStatus__Po')
+
+    webBox.controller.ws.init('webBox/app/wsChannel')
+    router.websocket('/ws', 'ws.entry')
 
     app.run(host = '0.0.0.0', port = 5000, debug=True)
 
