@@ -39,4 +39,25 @@ html
           )
         button.cPaperSlip_form_submit
           span 送出
+    br
+    section.cLogin
+      .cLogin_pop
+        .cLogin_pop_title
+          span 登入 (非註冊)
+        .cLogin_pop_statusInfo
+        form.cLogin_pop_form
+          .cLogin_pop_form_phone
+            span 手機號碼：
+            input.makeInput(
+              type="text"
+              placeholder="手機號碼"
+            )
+          .cLogin_pop_form_verifiedCode
+            span 驗證碼：
+            input.makeInput(
+              type="text"
+              placeholder="驗證碼"
+            )
+          button.cLogin_pop_form_submit
+            span 送出
 

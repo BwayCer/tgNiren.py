@@ -21,7 +21,7 @@ body {
 .cPaperSlip_form {
   content: "";
 }
-.cPaperSlip_form .cPaperSlip_form_submit, .cPaperSlip_form .cPaperSlip_form_sourceLink, .cPaperSlip_form .cPaperSlip_form_roomIds {
+.cPaperSlip_form .cLogin_pop_form_submit, .cPaperSlip_form .cLogin_pop_form_verifiedCode, .cPaperSlip_form .cLogin_pop_form_phone, .cPaperSlip_form .cPaperSlip_form_submit, .cPaperSlip_form .cPaperSlip_form_sourceLink, .cPaperSlip_form .cPaperSlip_form_roomIds {
   margin: 0.4em;
   display: block;
 }
@@ -38,6 +38,27 @@ body {
   vertical-align: middle;
 }
 .cPaperSlip_form .makeInput {
+  margin-left: 1em;
+  padding: 0.2em;
+}
+
+.cLogin {
+  padding: 1em;
+}
+.cLogin_pop_title {
+  margin: 0.6em 0 1em;
+}
+.cLogin_pop_title span {
+  font-size: 1.4em;
+}
+.cLogin_pop_statusInfo {
+  margin: 1em 0.4em;
+}
+.cLogin_pop_form .cLogin_pop_form_submit, .cLogin_pop_form .cLogin_pop_form_verifiedCode, .cLogin_pop_form .cLogin_pop_form_phone, .cLogin_pop_form .cPaperSlip_form_roomIds, .cLogin_pop_form .cPaperSlip_form_sourceLink, .cLogin_pop_form .cPaperSlip_form_submit {
+  margin: 0.4em;
+  display: block;
+}
+.cLogin_pop_form .makeInput {
   margin-left: 1em;
   padding: 0.2em;
 }
