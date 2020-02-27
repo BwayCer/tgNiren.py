@@ -72,11 +72,7 @@
 
         function _csvParse(csvData) {
             let currMatch, currMatch_3;
-            let fieldRegEx = new RegExp(
-                '(?:\s*"((?:""|[^"])*)"\s*|\s*((?:""|[^",\r\n])*(?:""|[^"\s,\r\n]))?\s*)'
-                    + '(,|[\r\n]+|$)',
-                'g'
-            );
+            let fieldRegEx = /(?:\s*"((?:""|[^"])*)"\s*|\s*((?:""|[^",\r\n])*(?:""|[^"\s,\r\n]))?\s*)(,|[\r\n]+|$)/g
             let rows = [];
             let row = [];
 
