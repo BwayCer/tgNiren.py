@@ -94,7 +94,6 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
         finalPeersLength = len(finalPeers)
         bandNiUserList = []
         idx = 0
-        # TODO 越來越容易被封 但至少也能傳近乎 200 則 所以暫且不先延長時間
         async for clientInfo in tgTool.iterPickClient(-1, 1, whichNiUsers = True):
             myId = clientInfo['id']
             client = clientInfo['client']
@@ -109,9 +108,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
 
             forwardPeer = finalPeers[idx]
             try:
-                typeName = await tgTool.getPeerTypeName(forwardPeer)
-                if typeName != 'User':
-                    await tgTool.joinGroup(client, forwardPeer)
+                await tgTool.joinGroup(client, forwardPeer)
 
                 await client(telethon.functions.messages.ForwardMessagesRequest(
                     from_peer = mainGroup,
@@ -124,11 +121,12 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                 latestStatus = '炸群進度： {}/{}'.format(idx, finalPeersLength)
                 await _paperSlipAction_send(pageId, 1, latestStatus)
                 print('(runId: {}) ok: {}/{}'.format(runId, idx, finalPeersLength))
-            except telethon.errors.MessageIdInvalidError as err:
-                print('(runId: {}) {} get MessageIdInvalidError: {}'.format(
-                    runId, myId, err
-                ))
-                raise err
+            except telethon.errors.ChannelsTooMuchError as err:
+                # 已加入了太多的渠道/超級群組。
+                print('(runId: {}) {} get ChannelsTooMuchError: wait 30 day.'.format(runId, myId))
+                maturityDate = novice.dateNowAfter(days = 30)
+                tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
+                bandNiUserList.append(myId)
             except telethon.errors.FloodWaitError as err:
                 waitTimeSec = err.seconds
                 print('(runId: {}) {} get FloodWaitError: wait {} seconds.'.format(runId, myId, waitTimeSec))
@@ -146,20 +144,25 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                 maturityDate = novice.dateNowAfter(hours = 12)
                 tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
                 bandNiUserList.append(myId)
-            except telethon.errors.ChatWriteForbiddenError as err:
-                # You can't write in this chat
-                print('(runId: {}) {} get ChatWriteForbiddenError: {}'.format(runId, myId, err))
-                tgTool.chanData.pushGuy(
-                    await client.get_entity(forwardPeer),
-                    err
-                )
-                idx += 1
             except Exception as err:
+                errType = type(err)
                 print('(runId: {}) {} get {} Error: {} (target group: {})'.format(
-                    runId, myId, type(err), err, forwardPeer
+                    runId, myId, errType, err, forwardPeer
                 ))
-                # 預防性處理，避免相同錯誤一值迴圈
-                bandNiUserList.append(myId)
+                if novice.indexOf(_invalidMessageErrorTypeList, errType) == -1:
+                    print('Invalid Message Error({}): {}'.format(errType, err))
+                    break
+                elif novice.indexOf(_invalidPeerErrorTypeList, errType) == -1:
+                    print('Invalid Peer Error({}): {}'.format(errType, err))
+                    idx += 1
+                elif novice.indexOf(_knownErrorTypeList, errType) == -1:
+                    print('Known Error({}): {}'.format(errType, err))
+                    idx += 1
+                    bandNiUserList.append(myId)
+                else:
+                    print('Unknown Error({}): {}'.format(type(err), err))
+                    idx += 1
+                    bandNiUserList.append(myId)
 
         latestStatus += ' ({})'.format(
             '仿用戶用盡' if len(bandNiUserList) == usedClientCount else '結束'
@@ -171,6 +174,40 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
     finally:
         innerSession['runing'] = False
         await tgTool.release()
+
+# https://tl.telethon.dev/methods/channels/join_channel.html
+# https://tl.telethon.dev/methods/messages/forward_messages.html
+_invalidMessageErrorTypeList = [
+    telethon.errors.MediaEmptyError,
+    telethon.errors.MessageIdsEmptyError,
+    telethon.errors.MessageIdInvalidError,
+    telethon.errors.RandomIdDuplicateError,
+    telethon.errors.RandomIdInvalidError,
+    telethon.errors.GroupedMediaInvalidError, # ? Invalid grouped media.
+]
+_invalidPeerErrorTypeList = [
+    ValueError, # 沒有此用戶或群組名稱
+    telethon.errors.ChannelInvalidError,
+    telethon.errors.ChannelPrivateError,
+    telethon.errors.ChatAdminRequiredError,
+    telethon.errors.ChatIdInvalidError,
+    telethon.errors.ChatSendGifsForbiddenError,
+    telethon.errors.ChatSendMediaForbiddenError,
+    telethon.errors.ChatSendStickersForbiddenError,
+    telethon.errors.ChatWriteForbiddenError,
+    telethon.errors.InputUserDeactivatedError,
+    telethon.errors.PeerIdInvalidError,
+    telethon.errors.UserBannedInChannelError,
+    telethon.errors.UserIsBlockedError,
+]
+_knownErrorTypeList = [
+    telethon.errors.PtsChangeEmptyError, # ? No PTS change.
+    telethon.errors.ScheduleDateTooLateError,
+    telethon.errors.ScheduleTooMuchError,
+    telethon.errors.TimeoutError,
+    telethon.errors.UserIsBotError,
+    telethon.errors.YouBlockedUserError,
+]
 
 async def _paperSlipAction_send(
         pageId: str,
