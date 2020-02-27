@@ -1,56 +1,73 @@
 'use strict';
 
 
-(_ => {
-    const helNiUsersStatus = document.querySelector('.cStatusInfo_niUsers');
-    const helLatestStatus = document.querySelector('.cStatusInfo_latest');
-    (async function checkStatus(errorCount) {
-        let fetchResult;
-        try {
-            fetchResult = await fetch('/api/latestStatus', {
-                method: 'POST',
-                headers: new Headers({
-                    'Content-Type': 'application/json'
-                }),
-                body: JSON.stringify({
-                    method: 'latestStatus'
-                }),
-            });
-        } catch (err) {
-            alert('找不到主機');
-            return;
-        }
+(async _ => {
+    const ws = new WebSocket('ws://' + document.domain + ':' + location.port + '/ws');
+    await (function connectWs(ws) {
+        ws.onopen = function () {
+            ws.send('pin')
+        };
 
-        let niUsersStatus = '';
-        let latestStatus = '';
+        return new Promise(function (reject, resolve) {
+            ws.onmessage = function (evt) {
+                let receiveDatasTxt = evt.data;
 
-        if (fetchResult.status >= 500) {
-            errorCount += 1;
-            latestStatus = `${fetchResult.status} 主機錯誤`;
-        } else {
-            let data = await fetchResult.json();
+                switch (receiveDatasTxt) {
+                    case 'pon':
+                        ws.send('register')
+                        break
+                    case 'register-ok':
+                        ws.onopen = ws.onmessage = null;
+                        reject('ok');
+                        break
+                }
+            };
+            setTimeout(function () {
+                resolve('timeout');
+            }, 10000);
+        });
+    })(ws);
 
-            if (fetchResult.status >= 400) {
-                errorCount += 1;
-                latestStatus = data.message;
-            } else {
-                errorCount = 0;
-                niUsersStatus = data.niUsersStatus;
-                latestStatus = data.latestStatus;
-                niUsersStatus = niUsersStatus !== null ? niUsersStatus : '---';
-                latestStatus = latestStatus !== null ? latestStatus : '---';
+    ws.onclose = function (evt) {
+        alert('失去連線 請試試重整網頁 (F5)');
+    };
+
+    let wsMethodBox = {};
+    ws.onmessage = function (evt) {
+        const receiveDatasTxt = evt.data;
+        console.log(receiveDatasTxt);
+
+        const receiveDatas = JSON.parse(receiveDatasTxt)
+        if (receiveDatas.constructor === Array) {
+            let key, item, type;
+            for (key in receiveDatas) {
+                item = receiveDatas[key];
+                if ('type' in item && wsMethodBox.hasOwnProperty(item.type)) {
+                    try {
+                        wsMethodBox[item.type](item);
+                    } catch (err) {
+                        console.error(err)
+                    }
+                }
             }
         }
+    };
 
-        helNiUsersStatus.innerText = niUsersStatus;
-        helLatestStatus.innerText = latestStatus;
+    (_ => {
+        const helNiUsersStatus = document.querySelector('.cStatusInfo_niUsers');
+        const helLatestStatus = document.querySelector('.cStatusInfo_latest');
 
-        if (errorCount < 3) {
-            setTimeout(checkStatus, 3000, errorCount);
-        } else {
-            helLatestStatus.innerText += ' (請試試重整網頁 (F5))';
-        }
-    })(0);
+        wsMethodBox['niUsersStatus.latestStatus'] = function (receive) {
+            let niUsersStatus = receive.niUsersStatus;
+            let latestStatus = receive.latestStatus;
+            niUsersStatus = niUsersStatus !== null ? niUsersStatus : '---';
+            latestStatus = latestStatus !== null ? latestStatus : '---';
+
+            helNiUsersStatus.innerText = niUsersStatus;
+            helLatestStatus.innerText = latestStatus;
+        };
+        ws.send(JSON.stringify([{type: 'niUsersStatus.subscribe', prop: 'latestStatus'}]));
+    })();
 })();
 
 

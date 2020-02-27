@@ -52,26 +52,6 @@ async def post():
     except Exception as err:
         return _apiError(400, '{}: {}'.format(type(err), err))
 
-async def api_latestStatus__Po():
-    if not _wwwAuth.verifyAuth(quart.request.authorization):
-        return _controller._apiError(401, '未登入。')
-
-    pageId = quart.request.cookies.get('pageId')
-    pageInnerSession = serverMix.innerSession.get(pageId)
-
-    if pageInnerSession == None:
-        return _controller._apiError(404, '頁面識別碼過期。')
-
-    niUsersStatusInfo = tgTodoFunc.getNiUsersStatusInfo()
-    return quart.jsonify({
-        'niUsersStatus': '仿用戶可用比： {}/{} ({})'.format(
-            niUsersStatusInfo['lockCount'],
-            niUsersStatusInfo['allCount'],
-            '工具可用' if niUsersStatusInfo['allCount'] - niUsersStatusInfo['lockCount'] > 3 else '工具不可用'
-        ),
-        'latestStatus': pageInnerSession['latestStatus']
-    })
-
 
 class _wwwAuth():
     def getLoginResponse() -> quart.Response:

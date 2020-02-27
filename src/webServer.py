@@ -20,7 +20,6 @@ def main() -> None:
     router = serverMix.Router(app, 'webBox.controller')
     router.add('GET', '/', 'home.get')
     router.add('POST', '/', 'home.post')
-    router.add('POST', '/api/latestStatus', 'home.api_latestStatus__Po')
 
     webBox.controller.ws.init('webBox/app/wsChannel')
     router.websocket('/ws', 'ws.entry')
