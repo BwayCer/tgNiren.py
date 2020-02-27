@@ -19,7 +19,6 @@ def main() -> None:
 
     router = serverMix.Router(app, 'webBox.controller')
     router.add('GET', '/', 'home.get')
-    router.add('POST', '/', 'home.post')
 
     webBox.controller.ws.init('webBox/app/wsChannel')
     router.websocket('/ws', 'ws.entry')

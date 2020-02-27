@@ -5,39 +5,86 @@ import typing
 import os
 import datetime
 import asyncio
+import json
 import utils.novice as novice
-from tgkream.tgTool import TgBaseTool, telethon
+import webBox.serverMix as serverMix
+from tgkream.tgTool import TgBaseTool, telethon, tgTodoFunc
 
 
-async def asyncRun(pageSession: dict, data: dict, _dirname: str):
+__all__ = ['paperSlip']
+
+
+def paperSlip(pageId: str, prop: typing.Any = None) -> dict:
+    innerSession = serverMix.innerSession.get(pageId)
+    niUsersStatusInfo = tgTodoFunc.getNiUsersStatusInfo()
+    if innerSession['runing']:
+        return {
+            'code': -1,
+            'message': '工具執行中。',
+        }
+    elif niUsersStatusInfo['allCount'] - niUsersStatusInfo['lockCount'] < 3:
+        return {
+            'code': -1,
+            'message': '工具目前無法使用。',
+        }
+
+
+    if type(prop) != dict:
+        return {
+            'code': -1,
+            'message': '"prop" 參數必須是 `Object` 類型。',
+        }
+    if not ( \
+            'forwardPeerList' in prop \
+            and type(prop['forwardPeerList']) == list):
+        return {
+            'code': -1,
+            'message': '"prop.forwardPeerList" 參數不符合預期',
+        }
+    if not ( \
+            'mainGroup' in prop \
+            and type(prop['mainGroup']) == str):
+        return {
+            'code': -1,
+            'message': '"prop.mainGroup" 參數不符合預期',
+        }
+    if not ( \
+            'messageId' in prop \
+            and type(prop['messageId']) == int):
+        return {
+            'code': -1,
+            'message': '"prop.messageId" 參數不符合預期',
+        }
+
+    innerSession['runing'] = True
+    asyncio.ensure_future(_paperSlipAction(pageId, innerSession, prop))
+    return {
+        'code': 0,
+        'message': '請求已接收。'
+    }
+
+async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
     forwardPeers = data['forwardPeerList']
     mainGroup = data['mainGroup']
     messageId = data['messageId']
 
-    if type(forwardPeers) != list or type(mainGroup) != str or type(messageId) != int:
-        pageSession['latestStatus'] = '參數錯誤，無法運行命令。'
-        return
-
-    pageSession['runing'] = True
-
-    ynContinue = True
     usedClientCount = 3
+    latestStatus = ''
     try:
-        pageSession['latestStatus'] = '炸群進度： 初始化...'
+        latestStatus = '炸群進度： 初始化...'
+        await _paperSlipAction_send(pageId, 1, latestStatus)
         tgTool = TgBaseTool(
             novice.py_env['apiId'],
             novice.py_env['apiHash'],
-            sessionDirPath = _dirname + '/' + novice.py_env['tgSessionDirPath'],
+            sessionDirPath = novice.py_dirname + '/' + novice.py_env['tgSessionDirPath'],
             clientCount = usedClientCount,
             papaPhone = novice.py_env['papaPhoneNumber']
         )
         await tgTool.init()
     except Exception as err:
-        ynContinue = False
-        pageSession['latestStatus'] += ' (失敗)'
-
-    if not ynContinue:
-        pageSession['runing'] = False
+        innerSession['runing'] = False
+        latestStatus += ' (失敗)'
+        await _paperSlipAction_send(pageId, -1, latestStatus, ynError = True)
         return
 
     try:
@@ -74,10 +121,8 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                 ))
 
                 idx += 1
-                pageSession['latestStatus'] = '炸群進度： {}/{}'.format(
-                    idx,
-                    finalPeersLength
-                )
+                latestStatus = '炸群進度： {}/{}'.format(idx, finalPeersLength)
+                await _paperSlipAction_send(pageId, 1, latestStatus)
                 print('(runId: {}) ok: {}/{}'.format(runId, idx, finalPeersLength))
             except telethon.errors.MessageIdInvalidError as err:
                 print('(runId: {}) {} get MessageIdInvalidError: {}'.format(
@@ -116,20 +161,40 @@ async def asyncRun(pageSession: dict, data: dict, _dirname: str):
                 # 預防性處理，避免相同錯誤一值迴圈
                 bandNiUserList.append(myId)
 
-        if len(bandNiUserList) == usedClientCount:
-            pageSession['latestStatus'] += ' (仿用戶用盡)'
-        else:
-            pageSession['latestStatus'] += ' (結束)'
-    except Exception as err:
-        pageSession['latestStatus'] += ' (失敗)\n{} Error: {} (target group: {})'.format(
-            type(err),
-            novice.sysTracebackException(),
-            forwardPeer
+        latestStatus += ' ({})'.format(
+            '仿用戶用盡' if len(bandNiUserList) == usedClientCount else '結束'
         )
+        await _paperSlipAction_send(pageId, 1, latestStatus)
+    except Exception as err:
+        latestStatus += ' (失敗)'
+        await _paperSlipAction_send(pageId, -1, latestStatus, ynError = True)
     finally:
-        pageSession['runing'] = False
+        innerSession['runing'] = False
         await tgTool.release()
 
+async def _paperSlipAction_send(
+        pageId: str,
+        code: int,
+        message: str,
+        ynError = False) -> None:
+    payload = {
+        'type': 'adTool.paperSlipAction',
+        'code': code,
+        'message': message,
+    }
+    if ynError:
+        errInfo = novice.sysExceptionInfo()
+        errMsg = novice.sysTracebackException()
+        payload['message'] += '\n{}'.format(errMsg)
+        payload['error'] = {
+            'name': errInfo['name'],
+            'message': errInfo['message'],
+            'stackList': errInfo['stackList'],
+        }
+    await serverMix.wsHouse.send(
+        pageId,
+        json.dumps([payload])
+    )
 
 def _filterGuy(tgTool: TgBaseTool, mainList: typing.List[str]) -> typing.List[str]:
     blackGuyList = tgTool.chanData.data['blackGuy']['list']
