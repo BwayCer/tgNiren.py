@@ -120,16 +120,26 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                 idx += 1
                 latestStatus = '炸群進度： {}/{}'.format(idx, finalPeersLength)
                 await _paperSlipAction_send(pageId, 1, latestStatus)
-                print('(runId: {}) ok: {}/{}'.format(runId, idx, finalPeersLength))
+                novice.logNeedle.push('(runId: {}) ok: {}/{}'.format(
+                    runId, idx, finalPeersLength
+                ))
             except telethon.errors.ChannelsTooMuchError as err:
                 # 已加入了太多的渠道/超級群組。
-                print('(runId: {}) {} get ChannelsTooMuchError: wait 30 day.'.format(runId, myId))
+                novice.logNeedle.push(
+                    '(runId: {}) {} get ChannelsTooMuchError: wait 30 day.'.format(
+                        runId, myId
+                    )
+                )
                 maturityDate = novice.dateNowAfter(days = 30)
                 tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
                 bandNiUserList.append(myId)
             except telethon.errors.FloodWaitError as err:
                 waitTimeSec = err.seconds
-                print('(runId: {}) {} get FloodWaitError: wait {} seconds.'.format(runId, myId, waitTimeSec))
+                novice.logNeedle.push(
+                    '(runId: {}) {} get FloodWaitError: wait {} seconds.'.format(
+                        runId, myId, waitTimeSec
+                    )
+                )
                 # TODO 秒數待驗證
                 if waitTimeSec < 180:
                     await asyncio.sleep(waitTimeSec)
@@ -139,28 +149,40 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                     bandNiUserList.append(myId)
             except telethon.errors.PeerFloodError as err:
                 # 限制發送請求 Too many requests
-                print('(runId: {}) {} get PeerFloodError: wait 1 hour.'.format(runId, myId))
+                novice.logNeedle.push(
+                    '(runId: {}) {} get PeerFloodError: wait 1 hour.'.format(runId, myId)
+                )
                 # TODO 12 小時只是估計值
                 maturityDate = novice.dateNowAfter(hours = 12)
                 tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
                 bandNiUserList.append(myId)
             except Exception as err:
                 errType = type(err)
-                print('(runId: {}) {} get {} Error: {} (target group: {})'.format(
-                    runId, myId, errType, err, forwardPeer
-                ))
+                novice.logNeedle.push(
+                    '(runId: {}) {} get {} Error: {} (target group: {})'.format(
+                        runId, myId, errType, err, forwardPeer
+                    )
+                )
                 if novice.indexOf(_invalidMessageErrorTypeList, errType) == -1:
-                    print('Invalid Message Error({}): {}'.format(errType, err))
+                    novice.logNeedle.push(
+                        'Invalid Message Error({}): {}'.format(errType, err)
+                    )
                     break
                 elif novice.indexOf(_invalidPeerErrorTypeList, errType) == -1:
-                    print('Invalid Peer Error({}): {}'.format(errType, err))
+                    novice.logNeedle.push(
+                        'Invalid Peer Error({}): {}'.format(errType, err)
+                    )
                     idx += 1
                 elif novice.indexOf(_knownErrorTypeList, errType) == -1:
-                    print('Known Error({}): {}'.format(errType, err))
+                    novice.logNeedle.push(
+                        'Known Error({}): {}'.format(errType, err)
+                    )
                     idx += 1
                     bandNiUserList.append(myId)
                 else:
-                    print('Unknown Error({}): {}'.format(type(err), err))
+                    novice.logNeedle.push(
+                        'Unknown Error({}): {}'.format(type(err), err)
+                    )
                     idx += 1
                     bandNiUserList.append(myId)
 

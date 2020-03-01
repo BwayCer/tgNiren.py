@@ -8,7 +8,6 @@ import utils.novice as novice
 import utils.json
 
 
-_logFilePath = novice.py_dirname + '/' + novice.py_env['logFilePath']
 _chanDataFilePath = novice.py_dirname + '/' + novice.py_env['chanDataFilePath']
 
 _data = None
@@ -45,20 +44,4 @@ class ChanData():
         except:
             data = None
         return data
-
-
-class LogNeedle():
-    def __init__(self): pass
-
-    def push(self, text: str) -> None:
-        logTxt = '-~@~- {}\n{}\n\n'.format(
-            novice.dateStringify(novice.dateNow()),
-            text
-        )
-        with open(_logFilePath, 'a', encoding = 'utf-8') as fs:
-            fs.write(logTxt)
-
-    def pushException(self) -> bool:
-        logTxt = novice.sysTracebackException()
-        self.push(logTxt)
 

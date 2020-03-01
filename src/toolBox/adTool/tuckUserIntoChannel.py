@@ -3,7 +3,6 @@
 
 import typing
 import asyncio
-import utils.chanData
 import utils.novice as novice
 from tgkream.tgTool import TgBaseTool, telethon, TelegramClient
 
@@ -26,7 +25,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
     usableClientCount = tgTool.clientCount
     await tgTool.init()
 
-    logNeedle = utils.chanData.LogNeedle()
+    logNeedle = novice.LogNeedle()
     bandNiUserList = []
     async for info in _iterTuckInfo(tgTool, fromGroupPeer, toGroupPeer):
         myId = info['id']

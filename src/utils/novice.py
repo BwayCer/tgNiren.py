@@ -17,6 +17,27 @@ py_env = None
 if os.path.exists(py_dirname + '/env.yml'):
     py_env = utils.json.loadYml(py_dirname + '/env.yml')
 
+_logFilePath = py_dirname + '/' + py_env['logFilePath']
+
+
+class LogNeedle():
+    def __init__(self): pass
+
+    def push(self, text: str) -> None:
+        print(text)
+        logTxt = '-~@~- {}\n{}\n\n'.format(
+            dateStringify(dateNow()),
+            text
+        )
+        with open(_logFilePath, 'a', encoding = 'utf-8') as fs:
+            fs.write(logTxt)
+
+    def pushException(self) -> bool:
+        logTxt = sysTracebackException()
+        self.push(logTxt)
+
+logNeedle = LogNeedle()
+
 
 # 異常退出時執行
 #   @dOnExit
