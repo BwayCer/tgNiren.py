@@ -8,7 +8,7 @@ import asyncio
 import json
 import utils.novice as novice
 import webBox.serverMix as serverMix
-from tgkream.tgTool import TgBaseTool, telethon, tgTodoFunc
+from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool, tgTodoFunc
 
 
 __all__ = ['paperSlip']
@@ -76,10 +76,8 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
         latestStatus = '炸群進度： 初始化...'
         novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
         await _paperSlipAction_send(pageId, 1, latestStatus)
-        tgTool = TgBaseTool(
-            novice.py_env['apiId'],
-            novice.py_env['apiHash'],
-            sessionDirPath = novice.py_dirname + '/' + novice.py_env['tgSessionDirPath'],
+        tgTool = TgDefaultInit(
+            TgBaseTool,
             clientCount = usedClientCount,
             papaPhone = novice.py_env['papaPhoneNumber']
         )

@@ -7,7 +7,7 @@ import random
 import asyncio
 import json
 import utils.novice as novice
-from tgkream.tgTool import TgBaseTool, telethon
+from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
 
 
 def run(args: list, _dirpy: str, _dirname: str):
@@ -28,10 +28,8 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
     try:
         latestStatus = '炸群進度： 初始化...'
         novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
-        tgTool = TgBaseTool(
-            novice.py_env['apiId'],
-            novice.py_env['apiHash'],
-            sessionDirPath = _dirname + '/_tgSession',
+        tgTool = TgDefaultInit(
+            TgBaseTool,
             clientCount = 3,
             papaPhone = novice.py_env['papaPhoneNumber']
         )

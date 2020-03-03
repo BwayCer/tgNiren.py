@@ -4,7 +4,7 @@
 import typing
 import asyncio
 import utils.novice as novice
-from tgkream.tgTool import telethon, TgBaseTool
+from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
 
 
 def run(args: list, _dirpy: str, _dirname: str):
@@ -15,10 +15,8 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
     fromGroupPeer = args[2]
     toGroupPeer = args[3]
 
-    tgTool = TgBaseTool(
-        novice.py_env['apiId'],
-        novice.py_env['apiHash'],
-        sessionDirPath = _dirname + '/_tgSession',
+    tgTool = TgDefaultInit(
+        TgBaseTool,
         clientCount = clientBaseCount,
         papaPhone = novice.py_env['papaPhoneNumber']
     )
