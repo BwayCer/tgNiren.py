@@ -189,7 +189,14 @@ class _TgNiUsers():
         # 異常退出時執行
         @novice.dOnExit
         def onExit():
-            asyncio.run(self.release())
+            # NOTE 2020.03.02
+            # 無須在退出時刻意執行 `asyncio.run(self.release())` 協助 Telethon 斷開連線，
+            # 否則會拋出以下警告
+            #     /home/.../.venv/lib/python3.8/site-packages/telethon/client/telegrambaseclient.py:498:
+            #       RuntimeWarning: coroutine 'TelegramBaseClient._disconnect_coro' was never awaited
+            #         pass
+            #     RuntimeWarning: Enable tracemalloc to get the object allocation traceback
+            self.chanDataNiUsers.unlockPhones()
 
     async def init(self) -> None:
         clientCount = self.clientCount
@@ -299,7 +306,10 @@ class _TgNiUsers():
     async def release(self, *args):
         clientInfoList = self._clientInfoList
         for clientInfo in clientInfoList:
-            await clientInfo['client'].disconnect()
+            # 若是無 client，`client.disconnect()` 的回傳值是 None ?!
+            result = clientInfo['client'].disconnect()
+            if asyncio.iscoroutine(result):
+                result = await result
         clientInfoList.clear()
         self.chanDataNiUsers.unlockPhones(*args)
 
