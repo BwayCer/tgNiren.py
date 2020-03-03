@@ -3,8 +3,9 @@
 
 import typing
 import os
-import json
+import random
 import asyncio
+import json
 import utils.novice as novice
 from tgkream.tgTool import TgBaseTool, telethon
 
@@ -13,68 +14,189 @@ def run(args: list, _dirpy: str, _dirname: str):
     asyncio.run(asyncRun(args, _dirpy, _dirname))
 
 async def asyncRun(args: list, _dirpy: str, _dirname: str):
-    data = json.loads(args[1])
-
-    forwardPeers = data['forwardPeerList']
-    url = data['url']
-    msg = data['msg']
+    forwardPeersTxt = args[1]
+    url = args[2]
+    msg = args[3]
 
     mainGroup = novice.py_env['peers']['adChannle']
-    tgTool = TgBaseTool(
-        novice.py_env['apiId'],
-        novice.py_env['apiHash'],
-        sessionDirPath = _dirname + '/_tgSession',
-        clientCount = 3,
-        papaPhone = novice.py_env['papaPhoneNumber']
-    )
-    await tgTool.init()
+    forwardPeers = forwardPeersTxt.split(',')
 
-    messageId = await _sendFile(tgTool, mainGroup, url, msg)
+    # 用於打印日誌
+    runId = random.randrange(1000000, 9999999)
+    usedClientCount = 3
+    latestStatus = ''
+    try:
+        latestStatus = '炸群進度： 初始化...'
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
+        tgTool = TgBaseTool(
+            novice.py_env['apiId'],
+            novice.py_env['apiHash'],
+            sessionDirPath = _dirname + '/_tgSession',
+            clientCount = 3,
+            papaPhone = novice.py_env['papaPhoneNumber']
+        )
+        await tgTool.init()
+    except Exception as err:
+        latestStatus += ' (失敗)'
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
+        raise err
 
-    if messageId == -1:
-        raise Exception('Use Papa send file fail. (url: {}, msg: {})'.format(url, msg))
+    try:
+        latestStatus = '炸群進度： 上傳圖片...'
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
+        messageId = await _sendFile(tgTool, mainGroup, url, msg)
 
-    finalPeers = _filterGuy(tgTool, forwardPeers)
-    finalPeersLength = len(finalPeers)
-    idx = -1
-    async for client in tgTool.iterPickClient(-1, 1):
-        idx += 1
-        if finalPeersLength <= idx:
-            break
+        if messageId == -1:
+            raise Exception('Use Papa send file fail. (url: {}, msg: {})'.format(url, msg))
+    except Exception as err:
+        latestStatus += ' (失敗)'
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
+        raise err
 
-        forwardPeer = finalPeers[idx]
-        # TODO 不太會被封 需再測試才能確定 try cache 語句是否有錯誤
-        try:
-            typeName = await tgTool.getPeerTypeName(forwardPeer)
-            if typeName != 'User':
-                await tgTool.joinGroup(client, forwardPeer)
+    try:
+        finalPeers = _filterGuy(tgTool, forwardPeers)
+        finalPeersLength = len(finalPeers)
+        bandNiUserList = []
+        idx = 0
+        async for clientInfo in tgTool.iterPickClient(-1, 1, whichNiUsers = True):
+            readableIdx = idx + 1
+            myId = clientInfo['id']
+            client = clientInfo['client']
 
-            await client(telethon.functions.messages.ForwardMessagesRequest(
-                from_peer = mainGroup,
-                id = [messageId],
-                to_peer = forwardPeer,
-                random_id = [tgTool.getRandId()]
+            if novice.indexOf(bandNiUserList, myId) != -1:
+                if len(bandNiUserList) == usedClientCount:
+                    break
+                continue
+
+            if finalPeersLength <= idx:
+                break
+
+            latestStatus = '炸群進度： {}/{}'.format(readableIdx, finalPeersLength)
+            novice.logNeedle.push('(runId: {}) ok: {}/{}'.format(
+                runId, readableIdx, finalPeersLength
             ))
-        except telethon.errors.MessageIdInvalidError as err:
-            print('MessageIdInvalidError: {}'.format(err))
-            raise err
-        except telethon.errors.FloodWaitError as err:
-            waitTimeSec = err.seconds
-            print("FloodWaitError: wait {} seconds.".format(waitTimeSec))
-            myInfo = await client.get_me()
-            maturityDate = novice.dateNowAfter(seconds = waitTimeSec)
-            tgTool.chanDataNiUsers.pushBandData(myInfo.phone, maturityDate)
-            await tgTool.reinit()
-        except telethon.errors.ChatWriteForbiddenError as err:
-            # You can't write in this chat
-            print('ChatWriteForbiddenError: {}'.format(err))
-            tgTool.chanData.pushGuy(
-                await client.get_entity(forwardPeer),
-                err
-            )
-        except Exception as err:
-            print('{} Error: {} (target group: {})'.format(type(err), err, forwardPeer))
+            try:
+                forwardPeer = finalPeers[idx]
+                await tgTool.joinGroup(client, forwardPeer)
+                await client(telethon.functions.messages.ForwardMessagesRequest(
+                    from_peer = mainGroup,
+                    id = [messageId],
+                    to_peer = forwardPeer,
+                    random_id = [tgTool.getRandId()]
+                ))
 
+                idx += 1
+            except telethon.errors.ChannelsTooMuchError as err:
+                print(novice.sysTracebackException(ysHasTimestamp = True))
+                # 已加入了太多的渠道/超級群組。
+                novice.logNeedle.push(
+                    '(runId: {}) {} get ChannelsTooMuchError: wait 30 day.'.format(
+                        runId, myId
+                    )
+                )
+                maturityDate = novice.dateNowAfter(days = 30)
+                tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
+                bandNiUserList.append(myId)
+            except telethon.errors.FloodWaitError as err:
+                print(novice.sysTracebackException(ysHasTimestamp = True))
+                waitTimeSec = err.seconds
+                novice.logNeedle.push(
+                    '(runId: {}) {} get FloodWaitError: wait {} seconds.'.format(
+                        runId, myId, waitTimeSec
+                    )
+                )
+                # TODO 秒數待驗證
+                if waitTimeSec < 180:
+                    await asyncio.sleep(waitTimeSec)
+                else:
+                    maturityDate = novice.dateNowAfter(seconds = waitTimeSec)
+                    tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
+                    bandNiUserList.append(myId)
+            except telethon.errors.PeerFloodError as err:
+                print(novice.sysTracebackException(ysHasTimestamp = True))
+                # 限制發送請求 Too many requests
+                novice.logNeedle.push(
+                    '(runId: {}) {} get PeerFloodError: wait 1 hour.'.format(runId, myId)
+                )
+                # TODO 12 小時只是估計值
+                maturityDate = novice.dateNowAfter(hours = 12)
+                tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
+                bandNiUserList.append(myId)
+            except Exception as err:
+                print(novice.sysTracebackException(ysHasTimestamp = True))
+                errType = type(err)
+                novice.logNeedle.push(
+                    '(runId: {}) {} get {} Error: {} (target group: {})'.format(
+                        runId, myId, errType, err, forwardPeer
+                    )
+                )
+                if novice.indexOf(_invalidMessageErrorTypeList, errType) != -1:
+                    novice.logNeedle.push(
+                        'Invalid Message Error({}): {}'.format(errType, err)
+                    )
+                    break
+                elif novice.indexOf(_invalidPeerErrorTypeList, errType) != -1:
+                    novice.logNeedle.push(
+                        'Invalid Peer Error({}): {}'.format(errType, err)
+                    )
+                    idx += 1
+                elif novice.indexOf(_knownErrorTypeList, errType) != -1:
+                    novice.logNeedle.push(
+                        'Known Error({}): {}'.format(errType, err)
+                    )
+                    idx += 1
+                    bandNiUserList.append(myId)
+                else:
+                    novice.logNeedle.push(
+                        'Unknown Error({}): {}'.format(type(err), err)
+                    )
+                    idx += 1
+                    bandNiUserList.append(myId)
+
+
+        latestStatus += ' ({})'.format(
+            '仿用戶用盡' if len(bandNiUserList) == usedClientCount else '結束'
+        )
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
+    except Exception as err:
+        latestStatus += ' (失敗)'
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
+        raise err
+
+
+# https://tl.telethon.dev/methods/channels/join_channel.html
+# https://tl.telethon.dev/methods/messages/forward_messages.html
+_invalidMessageErrorTypeList = [
+    telethon.errors.MediaEmptyError,
+    telethon.errors.MessageIdsEmptyError,
+    telethon.errors.MessageIdInvalidError,
+    telethon.errors.RandomIdDuplicateError,
+    telethon.errors.RandomIdInvalidError,
+    telethon.errors.GroupedMediaInvalidError, # ? Invalid grouped media.
+]
+_invalidPeerErrorTypeList = [
+    ValueError, # 沒有此用戶或群組名稱
+    telethon.errors.ChannelInvalidError,
+    telethon.errors.ChannelPrivateError,
+    telethon.errors.ChatAdminRequiredError,
+    telethon.errors.ChatIdInvalidError,
+    telethon.errors.ChatSendGifsForbiddenError,
+    telethon.errors.ChatSendMediaForbiddenError,
+    telethon.errors.ChatSendStickersForbiddenError,
+    telethon.errors.ChatWriteForbiddenError,
+    telethon.errors.InputUserDeactivatedError,
+    telethon.errors.PeerIdInvalidError,
+    telethon.errors.UserBannedInChannelError,
+    telethon.errors.UserIsBlockedError,
+]
+_knownErrorTypeList = [
+    telethon.errors.PtsChangeEmptyError, # ? No PTS change.
+    telethon.errors.ScheduleDateTooLateError,
+    telethon.errors.ScheduleTooMuchError,
+    telethon.errors.TimeoutError,
+    telethon.errors.UserIsBotError,
+    telethon.errors.YouBlockedUserError,
+]
 
 async def _sendFile(tgTool: TgBaseTool, group: str, url: str, msg: str = '') -> int:
     async with tgTool.usePapaClient() as client:
