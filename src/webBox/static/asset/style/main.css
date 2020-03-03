@@ -15,6 +15,9 @@ body {
 .cPaperSlip_title span {
   font-size: 1.4em;
 }
+.cPaperSlip_status {
+  margin: 1em 0.4em;
+}
 .cPaperSlip_form {
   content: "";
 }

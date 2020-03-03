@@ -9,7 +9,7 @@ import asyncio
 import contextlib
 import telethon.sync as telethon
 import utils.chanData
-import utils.novice
+import utils.novice as novice
 import tgkream.errors as errors
 from tgkream.utils import TgTypeing, TgSession
 
@@ -47,7 +47,7 @@ class _TgChanData_NiUsers(TgSession):
             return
 
         bands = niUsers['bandList']
-        nowTimeMs = utils.novice.dateNowTimestamp()
+        nowTimeMs = novice.dateNowTimestamp()
         for idx in range(bandInfosLength - 1, -1, -1):
             bandInfo = bandInfos[idx]
             if bandInfo['bannedWaitTimeMs'] < nowTimeMs:
@@ -58,7 +58,7 @@ class _TgChanData_NiUsers(TgSession):
 
     def getUsablePhones(self) -> list:
         phones = self.getOwnPhones()
-        papaPhoneIdx = utils.novice.indexOf(phones, self._papaPhone)
+        papaPhoneIdx = novice.indexOf(phones, self._papaPhone)
         if papaPhoneIdx != -1:
             del phones[papaPhoneIdx]
         return phones
@@ -72,12 +72,12 @@ class _TgChanData_NiUsers(TgSession):
         niUsers = self.chanData.data['niUsers']
 
         locks = niUsers['lockList']
-        locksIdx = utils.novice.indexOf(locks, phoneNumber)
+        locksIdx = novice.indexOf(locks, phoneNumber)
         if locksIdx != -1:
             del locks[locksIdx]
 
         bands = niUsers['bandList']
-        bandsIdx = utils.novice.indexOf(bands, phoneNumber)
+        bandsIdx = novice.indexOf(bands, phoneNumber)
         if bandsIdx != -1:
             del bands[bandsIdx]
             bandInfos = niUsers['bandInfos']
@@ -98,18 +98,18 @@ class _TgChanData_NiUsers(TgSession):
     def pushBandData(self, phoneNumber: str, dt: datetime.datetime) -> bool:
         niUsers = self.chanData.data['niUsers']
         bands = niUsers['bandList']
-        if utils.novice.indexOf(bands, phoneNumber) == -1:
+        if novice.indexOf(bands, phoneNumber) == -1:
             bands.append(phoneNumber)
             niUsers['bandInfos'].append({
                 'id': phoneNumber,
-                'bannedWaitDate': utils.novice.dateStringify(dt),
-                'bannedWaitTimeMs': utils.novice.dateTimestamp(dt)
+                'bannedWaitDate': novice.dateStringify(dt),
+                'bannedWaitTimeMs': novice.dateTimestamp(dt)
             })
         return False
 
     def lockPhone(self, phoneNumber: str) -> bool:
         locks = self.chanData.data['niUsers']['lockList']
-        if utils.novice.indexOf(locks, phoneNumber) == -1:
+        if novice.indexOf(locks, phoneNumber) == -1:
             locks.append(phoneNumber)
             self.pickPhones.append(phoneNumber)
             return True
@@ -118,7 +118,7 @@ class _TgChanData_NiUsers(TgSession):
     def _unlockPhones_chanData(self, lockPhoneList: list) -> None:
         locks = self.chanData.data['niUsers']['lockList']
         for phoneNumber in lockPhoneList:
-            phoneIdx = utils.novice.indexOf(locks, phoneNumber)
+            phoneIdx = novice.indexOf(locks, phoneNumber)
             if phoneIdx != -1:
                 del locks[phoneIdx]
 
@@ -131,7 +131,7 @@ class _TgChanData_NiUsers(TgSession):
             unlockPhones = args[0]
             self._unlockPhones_chanData(unlockPhones)
             for phoneNumber in unlockPhones:
-                phoneIdx = utils.novice.indexOf(pickPhones, phoneNumber)
+                phoneIdx = novice.indexOf(pickPhones, phoneNumber)
                 if phoneIdx != -1:
                     del pickPhones[phoneIdx]
         self.chanData.store()
@@ -151,7 +151,7 @@ class _TgChanData(utils.chanData.ChanData):
         blackGuyList = blackGuy['list']
 
         userId = peer.id
-        if utils.novice.indexOf(blackGuyList, userId) == -1:
+        if novice.indexOf(blackGuyList, userId) == -1:
             blackGuyList.append(userId)
             username = peer.username
             if username != '':
@@ -187,7 +187,7 @@ class _TgNiUsers():
         self._currentClient = None
 
         # 異常退出時執行
-        @utils.novice.dOnExit
+        @novice.dOnExit
         def onExit():
             asyncio.run(self.release())
 
@@ -238,8 +238,8 @@ class _TgNiUsers():
         for idx in range(indexStart, usablePhonesLength + indexStart):
             phoneNumber = usablePhones[idx % usablePhonesLength]
 
-            if utils.novice.indexOf(bandPhones, phoneNumber) != -1 \
-                    or utils.novice.indexOf(lockPhones, phoneNumber) != -1:
+            if novice.indexOf(bandPhones, phoneNumber) != -1 \
+                    or novice.indexOf(lockPhones, phoneNumber) != -1:
                 continue
 
             if chanDataNiUsers.lockPhone(phoneNumber):
@@ -371,18 +371,18 @@ class _TgNiUsers():
         clientInfoListLength = len(clientInfoList)
         maxLoopTimes = clientInfoListLength * circleLimit if circleLimit != -1 else -1
 
-        prevTimeMs = utils.novice.dateNowTimestamp()
+        prevTimeMs = novice.dateNowTimestamp()
         idxLoop = 0
         while True:
             pickIdx = idxLoop % clientInfoListLength
 
             if circleInterval > 0 and idxLoop != 0 and pickIdx == 0:
-                nowTimeMs = utils.novice.dateNowTimestamp()
+                nowTimeMs = novice.dateNowTimestamp()
                 intervalTimeMs = circleInterval - ((nowTimeMs - prevTimeMs) / 1000)
                 if intervalTimeMs > 0:
                     print('wait {} second'.format(intervalTimeMs))
                     await asyncio.sleep(intervalTimeMs)
-                    prevTimeMs = utils.novice.dateNowTimestamp()
+                    prevTimeMs = novice.dateNowTimestamp()
                 else:
                     prevTimeMs = nowTimeMs
 
@@ -495,7 +495,7 @@ class TgBaseTool(_TgNiUsers):
                     continue
                 # 排除欲除外用戶
                 if ynHasExcludedUsers \
-                        and utils.novice.indexOf(excludedUserList, user.id) != -1:
+                        and novice.indexOf(excludedUserList, user.id) != -1:
                     continue
                 # 排除仿用戶
                 if self.lookforClientInfo(user.id) != None:
@@ -520,17 +520,11 @@ class TgBaseTool(_TgNiUsers):
 
 # TODO 因時程關係未拆分程式碼
 
-import os
-import sys
-
-_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-_env = utils.json.loadYml(_dirname + '/env.yml')
-
 class tgTodoFunc():
     def getNiUsersStatusInfo():
         chanDataNiUsers = _TgChanData_NiUsers(
-            _dirname + '/' + _env['tgSessionDirPath'],
-            _env['papaPhoneNumber']
+            novice.py_dirname + '/' + novice.py_env['tgSessionDirPath'],
+            novice.py_env['papaPhoneNumber']
         )
         usablePhones = chanDataNiUsers.getUsablePhones()
         niUsers = chanDataNiUsers.chanData.data['niUsers']

@@ -2,6 +2,7 @@
 
 
 import asyncio
+import utils.novice as novice
 import utils.json
 from tgkream.tgTool import TgBaseTool, telethon, TelegramClient
 
@@ -13,14 +14,12 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str) -> list:
     groupPeer = args[1]
     jsonFilePath = args[2]
 
-    _env = utils.json.loadYml(_dirname + '/env.yml')
-
     tgTool = TgBaseTool(
-        _env['apiId'],
-        _env['apiHash'],
+        novice.py_env['apiId'],
+        novice.py_env['apiHash'],
         sessionDirPath = _dirname + '/_tgSession',
         clientCount = 1,
-        papaPhone = _env['papaPhoneNumber']
+        papaPhone = novice.py_env['papaPhoneNumber']
     )
     await tgTool.init()
 

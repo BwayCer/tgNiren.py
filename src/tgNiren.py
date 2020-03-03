@@ -5,21 +5,17 @@ import os
 import sys
 import asyncio
 import utils.json
-import utils.novice
+import utils.novice as novice
 from tgkream.tgTool import TgBaseTool
-
-
-_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-_env = utils.json.loadYml(_dirname + '/env.yml')
 
 
 async def main():
     tgTool = TgBaseTool(
-        _env['apiId'],
-        _env['apiHash'],
-        sessionDirPath = _dirname + '/_tgSession',
+        novice.py_env['apiId'],
+        novice.py_env['apiHash'],
+        sessionDirPath = novice.py_dirname + '/_tgSession',
         clientCount = 1,
-        papaPhone = _env['papaPhoneNumber']
+        papaPhone = novice.py_env['papaPhoneNumber']
     )
     await tgTool.init()
 

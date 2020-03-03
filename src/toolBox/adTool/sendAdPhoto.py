@@ -5,8 +5,7 @@ import typing
 import os
 import json
 import asyncio
-import utils.novice
-import utils.json
+import utils.novice as novice
 from tgkream.tgTool import TgBaseTool, telethon
 
 
@@ -16,19 +15,17 @@ def run(args: list, _dirpy: str, _dirname: str):
 async def asyncRun(args: list, _dirpy: str, _dirname: str):
     data = json.loads(args[1])
 
-    _env = utils.json.loadYml(_dirname + '/env.yml')
-
     forwardPeers = data['forwardPeerList']
     url = data['url']
     msg = data['msg']
 
-    mainGroup = _env['peers']['adChannle']
+    mainGroup = novice.py_env['peers']['adChannle']
     tgTool = TgBaseTool(
-        _env['apiId'],
-        _env['apiHash'],
+        novice.py_env['apiId'],
+        novice.py_env['apiHash'],
         sessionDirPath = _dirname + '/_tgSession',
         clientCount = 3,
-        papaPhone = _env['papaPhoneNumber']
+        papaPhone = novice.py_env['papaPhoneNumber']
     )
     await tgTool.init()
 
@@ -65,7 +62,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             waitTimeSec = err.seconds
             print("FloodWaitError: wait {} seconds.".format(waitTimeSec))
             myInfo = await client.get_me()
-            maturityDate = utils.novice.dateNowAfter(seconds = waitTimeSec)
+            maturityDate = novice.dateNowAfter(seconds = waitTimeSec)
             tgTool.chanDataNiUsers.pushBandData(myInfo.phone, maturityDate)
             await tgTool.reinit()
         except telethon.errors.ChatWriteForbiddenError as err:
@@ -104,7 +101,7 @@ def _filterGuy(tgTool: TgBaseTool, mainList: typing.List[str]) -> typing.List[st
     blackGuyList = tgTool.chanData.data['blackGuy']['list']
     newList = []
     for peer in mainList:
-        if utils.novice.indexOf(blackGuyList, peer) == -1:
+        if novice.indexOf(blackGuyList, peer) == -1:
             newList.append(peer)
     return newList
 

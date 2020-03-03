@@ -17,6 +17,9 @@ body {
       font-size: 1.4em;
     }
   }
+  &_status {
+     margin: 1em 0.4em;
+  }
   &_form {
     %scFormChild {
       margin: 0.4em;

@@ -3,10 +3,40 @@
 
 import typing
 import traceback
+import os
 import sys
 import atexit
 import time
 import datetime
+import utils.json
+
+
+py_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
+
+py_env = None
+if os.path.exists(py_dirname + '/env.yml'):
+    py_env = utils.json.loadYml(py_dirname + '/env.yml')
+
+_logFilePath = py_dirname + '/' + py_env['logFilePath']
+
+
+class LogNeedle():
+    def __init__(self): pass
+
+    def push(self, text: str) -> None:
+        print(text)
+        logTxt = '-~@~- {}\n{}\n\n'.format(
+            dateStringify(dateNow()),
+            text
+        )
+        with open(_logFilePath, 'a', encoding = 'utf-8') as fs:
+            fs.write(logTxt)
+
+    def pushException(self) -> bool:
+        logTxt = sysTracebackException()
+        self.push(logTxt)
+
+logNeedle = LogNeedle()
 
 
 # 異常退出時執行
@@ -23,6 +53,26 @@ def dTryCatch(fn) -> typing.Callable[..., typing.Any]:
         except Exception:
             print(sysTracebackException(ysIsWrapTryCatch = True))
     return wrapTryCatch
+
+def sysExceptionInfo() -> dict:
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    callStackList = traceback.extract_tb(exc_tb)
+    stackList = []
+    for idx in range(len(callStackList)):
+        callStack = callStackList[idx]
+        stackList.append('File {}, line {}, in {}'.format(
+            callStack[0],
+            callStack[1],
+            callStack[2]
+        ))
+
+    return {
+        'error': exc_obj,
+        'type': exc_type,
+        'name': exc_type.__name__,
+        'message': str(exc_obj), # exc_obj.args[0]
+        'stackList': stackList,
+    }
 
 def sysTracebackException(
         ysHasTimestamp: bool = False,

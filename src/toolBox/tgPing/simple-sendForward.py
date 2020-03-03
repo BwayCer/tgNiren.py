@@ -4,8 +4,7 @@
 import typing
 import re
 import asyncio
-import utils.novice
-import utils.json
+import utils.novice as novice
 from tgkream.tgSimple import telethon, TgSimple
 
 
@@ -28,12 +27,10 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
     forwardGroup = matchForwardLink.group(1)
     forwardMessageId = int(matchForwardLink.group(2))
 
-    _env = utils.json.loadYml(_dirname + '/env.yml')
-
     tgTool = TgSimple(
-        _env['apiId'],
-        _env['apiHash'],
-        sessionDirPath = _dirname + '/' + _env['tgSessionDirPath'],
+        novice.py_env['apiId'],
+        novice.py_env['apiHash'],
+        sessionDirPath = _dirname + '/' + novice.py_env['tgSessionDirPath'],
     )
 
     print('-> 登入用戶')
@@ -68,26 +65,26 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
                 random_id = [tgTool.getRandId()]
             ))
         except telethon.errors.FloodWaitError as err:
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             waitTimeSec = err.seconds
             print('FloodWaitError: wait {} seconds. {}'.format(waitTimeSec, err))
             break
         except telethon.errors.PeerFloodError as err:
             # 限制發送請求 Too many requests
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             print('PeerFloodError: {}'.format(err))
             break
         except telethon.errors.UserIsBlockedError as err:
             # User is blocked
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             print('UserIsBlockedError: {}'.format(err))
             break
         except Exception as err:
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             errType = type(err)
-            if utils.novice.indexOf(_invalidMessageErrorTypeList, errType) == -1:
+            if novice.indexOf(_invalidMessageErrorTypeList, errType) == -1:
                 print('Invalid Error({}): {}'.format(errType, err))
-            elif utils.novice.indexOf(_knownErrorTypeList, errType) == -1:
+            elif novice.indexOf(_knownErrorTypeList, errType) == -1:
                 print('Known Error({}): {}'.format(errType, err))
                 break
             else:

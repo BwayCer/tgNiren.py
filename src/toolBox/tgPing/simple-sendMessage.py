@@ -3,8 +3,7 @@
 
 import typing
 import asyncio
-import utils.novice
-import utils.json
+import utils.novice as novice
 from tgkream.tgSimple import telethon, TgSimple
 
 
@@ -19,12 +18,10 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
     loopTimes = int(args[2])
     toGroupPeer = args[3]
 
-    _env = utils.json.loadYml(_dirname + '/env.yml')
-
     tgTool = TgSimple(
-        _env['apiId'],
-        _env['apiHash'],
-        sessionDirPath = _dirname + '/' + _env['tgSessionDirPath'],
+        novice.py_env['apiId'],
+        novice.py_env['apiHash'],
+        sessionDirPath = _dirname + '/' + novice.py_env['tgSessionDirPath'],
     )
 
     print('-> 登入用戶')
@@ -70,15 +67,15 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             ))
             pushErrMsg = ''
         except ValueError as err:
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             print('ValueError(沒有此用戶或群組名稱): {}'.format(err))
             break
         except telethon.errors.MessageIdInvalidError as err:
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             print('MessageIdInvalidError: {}'.format(err))
             raise err
         except telethon.errors.FloodWaitError as err:
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             waitTimeSec = err.seconds
             # TODO 印象中有短秒數的 FloodWaitError 錯誤
             print('FloodWaitError: {}'.format(err))
@@ -90,16 +87,16 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
                 break
         except telethon.errors.PeerFloodError as err:
             # 限制發送請求 Too many requests
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             print('PeerFloodError: {}'.format(err))
             break
         except telethon.errors.ChatWriteForbiddenError as err:
             # You can't write in this chat
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             print('ChatWriteForbiddenError: {}'.format(err))
             break
         except Exception as err:
-            print(utils.novice.sysTracebackException(ysHasTimestamp = True))
+            print(novice.sysTracebackException(ysHasTimestamp = True))
             print('{} Error: {} '.format(type(err), err))
             break
 
