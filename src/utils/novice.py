@@ -14,8 +14,8 @@ import utils.json
 py_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 py_env = None
-if os.path.exists(py_dirname + '/env.yml'):
-    py_env = utils.json.loadYml(py_dirname + '/env.yml')
+if os.path.exists(py_dirname + '/envfile/env.yml'):
+    py_env = utils.json.loadYml(py_dirname + '/envfile/env.yml')
 
 _logFilePath = py_dirname + '/' + py_env['logFilePath']
 

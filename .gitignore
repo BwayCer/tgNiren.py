@@ -5,6 +5,6 @@
 Pipfile.lock
 .venv
 
-src/env.yml
-src/_tgSession/
+envfile/
+!envfile/env.example.yml
 
