@@ -163,17 +163,17 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                         runId, myId, errType, err, forwardPeer
                     )
                 )
-                if novice.indexOf(_invalidMessageErrorTypeList, errType) == -1:
+                if novice.indexOf(_invalidMessageErrorTypeList, errType) != -1:
                     novice.logNeedle.push(
                         'Invalid Message Error({}): {}'.format(errType, err)
                     )
                     break
-                elif novice.indexOf(_invalidPeerErrorTypeList, errType) == -1:
+                elif novice.indexOf(_invalidPeerErrorTypeList, errType) != -1:
                     novice.logNeedle.push(
                         'Invalid Peer Error({}): {}'.format(errType, err)
                     )
                     idx += 1
-                elif novice.indexOf(_knownErrorTypeList, errType) == -1:
+                elif novice.indexOf(_knownErrorTypeList, errType) != -1:
                     novice.logNeedle.push(
                         'Known Error({}): {}'.format(errType, err)
                     )
