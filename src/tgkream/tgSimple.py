@@ -7,11 +7,11 @@ import random
 import asyncio
 import telethon.sync as telethon
 import tgkream.errors as errors
-import utils.novice
+import utils.novice as novice
 from tgkream.utils import TgTypeing, TgSession
 
 
-__all__ = ['errors', 'TgTypeing', 'TgSimple']
+__all__ = ['errors', 'telethon', 'TgTypeing', 'TgSimple']
 
 
 TelegramClient = telethon.TelegramClient
@@ -105,16 +105,16 @@ class TgSimple(TgSession):
         return random.randrange(1000000, 9999999)
 
     async def iterLoopInterval(self, length: int, circleInterval: float = 1) -> None:
-        prevTimeMs = utils.novice.dateNowTimestamp()
+        prevTimeMs = novice.dateNowTimestamp()
         idxLoop = 0
         while True:
             if circleInterval > 0 and idxLoop != 0:
-                nowTimeMs = utils.novice.dateNowTimestamp()
+                nowTimeMs = novice.dateNowTimestamp()
                 intervalTimeMs = circleInterval - ((nowTimeMs - prevTimeMs) / 1000)
                 if intervalTimeMs > 0:
                     print('wait {} second'.format(intervalTimeMs))
                     await asyncio.sleep(intervalTimeMs)
-                    prevTimeMs = utils.novice.dateNowTimestamp()
+                    prevTimeMs = novice.dateNowTimestamp()
                 else:
                     prevTimeMs = nowTimeMs
 

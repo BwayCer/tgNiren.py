@@ -14,7 +14,7 @@ import tgkream.errors as errors
 from tgkream.utils import TgTypeing, TgSession
 
 
-__all__ = ['errors', 'TgTypeing', 'TgBaseTool', 'tgTodoFunc']
+__all__ = ['errors', 'telethon', 'TgTypeing', 'TgBaseTool', 'tgTodoFunc']
 
 
 TelegramClient = telethon.TelegramClient
