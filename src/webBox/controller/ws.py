@@ -119,8 +119,15 @@ async def _niGraph(pageId: str, receiveDatasTxt: str) -> None:
                 resultData['error'] = {
                     'name': errInfo['name'],
                     'message': errInfo['message'],
-                    'stackList': errInfo['stackList'],
                 }
+                novice.logNeedle.push(
+                    'Catch error in ws.py\n'
+                    '  resultData:\n{}\n'
+                    '  errMsg:\n{}'.format(
+                        resultData,
+                        novice.sysTracebackException()
+                    )
+                )
 
             if resultData['type'] != '':
                 resultDatas.append(resultData)
