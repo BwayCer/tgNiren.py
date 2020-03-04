@@ -6,12 +6,12 @@ import re
 
 _origArgs = sys.argv
 _pyTool = {
-    'login.interactiveLogin.simple': 'toolBox/login/simple-interactiveLogin',
-    'adTool.sendAdPhoto': 'toolBox/adTool/sendAdPhoto',
-    'adTool.getParticipants': 'toolBox/adTool/getParticipants',
-    'adTool.tuckUserIntoChannel': 'toolBox/adTool/tuckUserIntoChannel',
-    'tgPing.sendMessage.simple': 'toolBox/tgPing/simple-sendMessage',
-    'tgPing.sendForward.simple': 'toolBox/tgPing/simple-sendForward',
+    'adTool.sendAdPhoto': 'adTool/sendAdPhoto',
+    'adTool.getParticipants': 'adTool/getParticipants',
+    'adTool.tuckUserIntoChannel': 'adTool/tuckUserIntoChannel',
+    'tgPing.interactiveLogin.simple': 'tgPing/simple-interactiveLogin',
+    'tgPing.sendMessage.simple': 'tgPing/simple-sendMessage',
+    'tgPing.sendForward.simple': 'tgPing/simple-sendForward',
 }
 
 if len(_origArgs) == 1:
@@ -24,10 +24,10 @@ elif _origArgs[1] in _pyTool:
     import utils.novice as novice
     try:
         importlib.import_module(
-            _pyTool[_origArgs[1]].replace('/', '.')
+            'toolBox.' + _pyTool[_origArgs[1]].replace('/', '.')
         ).run(
             [_origArgs[0], *_origArgs[2:]],
-            os.path.dirname(novice.py_dirname + '/' + _pyTool[_origArgs[1]]),
+            os.path.dirname(novice.py_dirname + '/toolBox/' + _pyTool[_origArgs[1]]),
             novice.py_dirname
         )
     except Exception as err:

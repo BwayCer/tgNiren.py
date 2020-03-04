@@ -4,7 +4,7 @@
 import typing
 import asyncio
 import utils.novice as novice
-from tgkream.tgTool import TgBaseTool, telethon, TelegramClient
+from tgkream.tgTool import telethon, TgBaseTool
 
 
 def run(args: list, _dirpy: str, _dirname: str):
@@ -101,7 +101,7 @@ async def _getExcludedUserIdList(tgTool: TgBaseTool, groupPeer: str) -> list:
 
 async def _getPickUserList(
         tgTool: TgBaseTool,
-        client: TelegramClient,
+        client: telethon.TelegramClient,
         groupPeer: str,
         offset: int,
         excludedUserList: list,

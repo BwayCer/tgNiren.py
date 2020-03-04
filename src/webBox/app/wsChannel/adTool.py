@@ -3,7 +3,7 @@
 
 import typing
 import os
-import datetime
+import random
 import asyncio
 import json
 import utils.novice as novice
@@ -68,10 +68,13 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
     mainGroup = data['mainGroup']
     messageId = data['messageId']
 
+    # 用於打印日誌
+    runId = random.randrange(1000000, 9999999)
     usedClientCount = 3
     latestStatus = ''
     try:
         latestStatus = '炸群進度： 初始化...'
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
         await _paperSlipAction_send(pageId, 1, latestStatus)
         tgTool = TgBaseTool(
             novice.py_env['apiId'],
@@ -84,17 +87,17 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
     except Exception as err:
         innerSession['runing'] = False
         latestStatus += ' (失敗)'
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
         await _paperSlipAction_send(pageId, -1, latestStatus, ynError = True)
         return
 
     try:
-        # 用於打印日誌
-        runId = tgTool.getRandId()
         finalPeers = _filterGuy(tgTool, forwardPeers)
         finalPeersLength = len(finalPeers)
         bandNiUserList = []
         idx = 0
         async for clientInfo in tgTool.iterPickClient(-1, 1, whichNiUsers = True):
+            readableIdx = idx + 1
             myId = clientInfo['id']
             client = clientInfo['client']
 
@@ -106,10 +109,14 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
             if finalPeersLength <= idx:
                 break
 
-            forwardPeer = finalPeers[idx]
+            latestStatus = '炸群進度： {}/{}'.format(readableIdx, finalPeersLength)
+            novice.logNeedle.push('(runId: {}) ok: {}/{}'.format(
+                runId, readableIdx, finalPeersLength
+            ))
+            await _paperSlipAction_send(pageId, 1, latestStatus)
             try:
+                forwardPeer = finalPeers[idx]
                 await tgTool.joinGroup(client, forwardPeer)
-
                 await client(telethon.functions.messages.ForwardMessagesRequest(
                     from_peer = mainGroup,
                     id = [messageId],
@@ -118,11 +125,6 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                 ))
 
                 idx += 1
-                latestStatus = '炸群進度： {}/{}'.format(idx, finalPeersLength)
-                await _paperSlipAction_send(pageId, 1, latestStatus)
-                novice.logNeedle.push('(runId: {}) ok: {}/{}'.format(
-                    runId, idx, finalPeersLength
-                ))
             except telethon.errors.ChannelsTooMuchError as err:
                 # 已加入了太多的渠道/超級群組。
                 novice.logNeedle.push(
@@ -163,17 +165,17 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                         runId, myId, errType, err, forwardPeer
                     )
                 )
-                if novice.indexOf(_invalidMessageErrorTypeList, errType) == -1:
+                if novice.indexOf(_invalidMessageErrorTypeList, errType) != -1:
                     novice.logNeedle.push(
                         'Invalid Message Error({}): {}'.format(errType, err)
                     )
                     break
-                elif novice.indexOf(_invalidPeerErrorTypeList, errType) == -1:
+                elif novice.indexOf(_invalidPeerErrorTypeList, errType) != -1:
                     novice.logNeedle.push(
                         'Invalid Peer Error({}): {}'.format(errType, err)
                     )
                     idx += 1
-                elif novice.indexOf(_knownErrorTypeList, errType) == -1:
+                elif novice.indexOf(_knownErrorTypeList, errType) != -1:
                     novice.logNeedle.push(
                         'Known Error({}): {}'.format(errType, err)
                     )
@@ -189,9 +191,11 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
         latestStatus += ' ({})'.format(
             '仿用戶用盡' if len(bandNiUserList) == usedClientCount else '結束'
         )
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
         await _paperSlipAction_send(pageId, 1, latestStatus)
     except Exception as err:
         latestStatus += ' (失敗)'
+        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
         await _paperSlipAction_send(pageId, -1, latestStatus, ynError = True)
     finally:
         innerSession['runing'] = False

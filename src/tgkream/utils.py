@@ -7,6 +7,9 @@ import re
 import telethon.sync as telethon
 
 
+__all__ = ['TgTypeing', 'TgSession', 'TgDefaultInit']
+
+
 class TgTypeing():
     Peer = typing.Union[
         telethon.types.Chat,

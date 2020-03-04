@@ -4,7 +4,7 @@
 import asyncio
 import utils.novice as novice
 import utils.json
-from tgkream.tgTool import TgBaseTool, telethon, TelegramClient
+from tgkream.tgTool import telethon, TgBaseTool
 
 
 def run(args: list, _dirpy: str, _dirname: str):
