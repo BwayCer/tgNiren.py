@@ -5,7 +5,7 @@ import typing
 import re
 import asyncio
 import utils.novice as novice
-from tgkream.tgSimple import telethon, TgSimple
+from tgkream.tgSimple import telethon, TgDefaultInit, TgSimple
 
 
 def run(args: list, _dirpy: str, _dirname: str):
@@ -27,11 +27,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
     forwardGroup = matchForwardLink.group(1)
     forwardMessageId = int(matchForwardLink.group(2))
 
-    tgTool = TgSimple(
-        novice.py_env['apiId'],
-        novice.py_env['apiHash'],
-        sessionDirPath = _dirname + '/' + novice.py_env['tgSessionDirPath'],
-    )
+    tgTool = TgDefaultInit(TgSimple)
 
     print('-> 登入用戶')
     client = await tgTool.login(phoneNumber)

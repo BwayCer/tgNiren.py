@@ -8,10 +8,10 @@ import asyncio
 import telethon.sync as telethon
 import tgkream.errors as errors
 import utils.novice as novice
-from tgkream.utils import TgTypeing, TgSession
+from tgkream.utils import TgTypeing, TgSession, TgDefaultInit
 
 
-__all__ = ['errors', 'telethon', 'TgTypeing', 'TgSimple']
+__all__ = ['errors', 'telethon', 'TgTypeing', 'TgDefaultInit', 'TgSimple']
 
 
 TelegramClient = telethon.TelegramClient
@@ -21,9 +21,9 @@ class TgSimple(TgSession):
     def __init__(self,
             apiId: str,
             apiHash: str,
-            sessionDirPath: str,
+            sessionPrifix: str,
             papaPhone: str = 0):
-        TgSession.__init__(self, sessionDirPath)
+        TgSession.__init__(self, sessionPrifix)
 
         self._apiId = apiId
         self._apiHash = apiHash

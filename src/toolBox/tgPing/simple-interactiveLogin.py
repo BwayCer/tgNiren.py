@@ -3,7 +3,7 @@
 
 import asyncio
 import utils.novice as novice
-from tgkream.tgSimple import TgSimple
+from tgkream.tgSimple import TgDefaultInit, TgSimple
 
 
 def run(args: list, _dirpy: str, _dirname: str):
@@ -15,11 +15,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str) -> list:
 
     phoneNumber = args[1]
 
-    tgTool = TgSimple(
-        novice.py_env['apiId'],
-        novice.py_env['apiHash'],
-        sessionDirPath = _dirname + '/' + novice.py_env['tgSessionDirPath'],
-    )
+    tgTool = TgDefaultInit(TgSimple)
     client = await tgTool.login(phoneNumber)
 
     if client == None:

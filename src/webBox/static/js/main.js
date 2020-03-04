@@ -53,6 +53,14 @@
         }
     };
 
+    wsMethodBox['pinpon.pin'] = function (receive) {
+        console.log('pinpon.pin', receive)
+    };
+    wsMethodBox['pinpon.pon'] = function (receive) {
+        console.log('pinpon.pon', receive)
+    };
+    ws.send(JSON.stringify([{type: 'pinpon.pin', prop: 3}]));
+
     (_ => {
         const helNiUsersStatus = document.querySelector('.cStatusInfo_niUsers');
 
@@ -63,6 +71,88 @@
             helNiUsersStatus.innerText = niUsersStatus;
         };
         ws.send(JSON.stringify([{type: 'niUsersStatus.subscribe', prop: 'latestStatus'}]));
+    })();
+
+    (_ => {
+        const helLoginPopStatus = document.querySelector('.cLogin_pop_statusInfo');
+        const helFormPhone = document.querySelector('.cLogin_pop_form_phone > .makeInput');
+        const helFormVerifiedCode = document.querySelector('.cLogin_pop_form_verifiedCode > .makeInput');
+
+        let host_phoneNumber = '';
+        let host_phoneCodeHash = '';
+
+        wsMethodBox['interactiveLogin.sendCode']
+            = wsMethodBox['interactiveLogin.verifiedCode']
+            = function (receive) {
+                if ('error' in receive) {
+                    console.error(receive.error);
+                    helLoginPopStatus.innerText = receive.error.message;
+                }
+
+                console.log('interactiveLogin', receive)
+                switch (receive.code) {
+                    case -3: // 登入失敗
+                    case -2: // 登入的仿用戶與主機留存仿用戶不相同
+                        host_phoneNumber = receive.phoneNumber;
+                        helLoginPopStatus.innerText = receive.message;
+                        break;
+                    case -1:
+                        host_phoneNumber = '';
+                        helLoginPopStatus.innerText = receive.message;
+                        break;
+                    case 2:
+                        host_phoneNumber = receive.phoneNumber;
+                        host_phoneCodeHash = receive.phoneCodeHash;
+                        helLoginPopStatus.innerText = receive.message;
+                        break;
+                    case 1: // 仿用戶已登入
+                    case 3: // 仿用戶登入成功
+                        host_phoneNumber = host_phoneCodeHash = '';
+                        helLoginPopStatus.innerText = receive.message;
+                        break;
+                }
+            }
+        ;
+
+        let _regexWord = /\w/;
+        let _regexSourceLink = /^https:\/\/t\.me\/([^\/]+)\/(\d+)$/;
+        document.querySelector('.cLogin_pop_form_submit')
+            .addEventListener('click', async function (evt) {
+                evt.preventDefault();
+                let phoneTxt = helFormPhone.value;
+                let verifiedCodeTxt = helFormVerifiedCode.value;
+
+                if (phoneTxt === '') {
+                    helLoginPopStatus.innerText = '請填寫手機號碼';
+                    return;
+                }
+                if (verifiedCodeTxt !== '' && host_phoneCodeHash === '') {
+                    helLoginPopStatus.innerText
+                        = '流程錯誤！ 請先送出手機號碼，再送出驗證號碼。';
+                    return;
+                }
+
+                let payload = {
+                    type: '',
+                    prop: null,
+                };
+                if (verifiedCodeTxt === '') {
+                    payload['type'] = 'interactiveLogin.sendCode';
+                    payload['prop'] = {
+                        phoneNumber: phoneTxt,
+                    }
+                } else {
+                    payload['type'] = 'interactiveLogin.verifiedCode';
+                    payload['prop'] = {
+                        phoneNumber: phoneTxt,
+                        phoneCodeHash: host_phoneCodeHash,
+                        verifiedCode: verifiedCodeTxt,
+                    }
+                }
+
+                ws.send(JSON.stringify([payload]));
+            })
+        ;
     })();
 
     (_ => {

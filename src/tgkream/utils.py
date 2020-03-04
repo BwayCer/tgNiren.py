@@ -5,6 +5,7 @@ import typing
 import os
 import re
 import telethon.sync as telethon
+import utils.novice as novice
 
 
 __all__ = ['TgTypeing', 'TgSession', 'TgDefaultInit']
@@ -30,12 +31,13 @@ class TgTypeing():
 
 
 class TgSession():
-    def __init__(self, sessionDirPath: str = ''):
-        self._sessionDirPath = sessionDirPath
-        if not os.path.exists(sessionDirPath):
-            os.makedirs(sessionDirPath)
+    def __init__(self, prifix: str = 'NoPrifix'):
+        self._sessionDirPath = novice.py_dirname + '/' + novice.py_env['tgSessionDirPath']
+        self._sessionPrifix = prifix
+        self._regexSessionName = r'^' + prifix + r'-(\d+).session$'
 
-    _regexSessionName = r'^telethon-(\d+).session$'
+        if not os.path.exists(self._sessionDirPath):
+            os.makedirs(self._sessionDirPath)
 
     def getOwnPhones(self) -> list:
         phones = []
@@ -49,8 +51,20 @@ class TgSession():
         return phones
 
     def getSessionPath(self, phoneNumber: str, noExt: bool = False):
-        path = self._sessionDirPath + '/telethon-' + phoneNumber
-        if noExt == False:
-            path += '.session'
-        return path
+        return '{}/{}-{}{}'.format(
+            self._sessionDirPath,
+            self._sessionPrifix,
+            phoneNumber,
+            '' if noExt else '.session'
+        )
+
+
+def TgDefaultInit(TgClass, *args, **kwargs):
+    apiId = novice.py_env['apiId']
+    return TgClass(
+        apiId,
+        novice.py_env['apiHash'],
+        sessionPrifix = 'telethon-' + apiId,
+        *args, **kwargs
+    )
 

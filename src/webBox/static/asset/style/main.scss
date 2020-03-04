@@ -59,3 +59,40 @@ body {
   }
 }
 
+.cLogin {
+  padding: 1em;
+
+  &_pop {
+    &_title {
+      margin: 0.6em 0 1em;
+
+      span {
+        font-size: 1.4em;
+      }
+    }
+    &_statusInfo {
+      margin: 1em 0.4em;
+    }
+    &_form {
+      %scFormChild {
+        margin: 0.4em;
+        display: block;
+      }
+
+      &_phone {
+        @extend %scFormChild;
+      }
+      &_verifiedCode {
+        @extend %scFormChild;
+      }
+      &_submit {
+        @extend %scFormChild;
+      }
+      .makeInput {
+        margin-left: 1em;
+        padding: 0.2em;
+      }
+    }
+  }
+}
+

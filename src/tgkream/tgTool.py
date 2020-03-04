@@ -11,18 +11,18 @@ import telethon.sync as telethon
 import utils.chanData
 import utils.novice as novice
 import tgkream.errors as errors
-from tgkream.utils import TgTypeing, TgSession
+from tgkream.utils import TgTypeing, TgSession, TgDefaultInit
 
 
-__all__ = ['errors', 'telethon', 'TgTypeing', 'TgBaseTool', 'tgTodoFunc']
+__all__ = ['errors', 'telethon', 'TgTypeing', 'TgDefaultInit', 'TgBaseTool', 'tgTodoFunc']
 
 
 TelegramClient = telethon.TelegramClient
 
 
 class _TgChanData_NiUsers(TgSession):
-    def __init__(self, sessionDirPath: str = '', papaPhone: str = ''):
-        TgSession.__init__(self, sessionDirPath)
+    def __init__(self, sessionPrifix: str = '', papaPhone: str = ''):
+        TgSession.__init__(self, sessionPrifix)
 
         self.chanData = utils.chanData.ChanData()
         if self.chanData.getSafe('.niUsers') == None:
@@ -169,7 +169,7 @@ class _TgNiUsers():
     def __init__(self,
             apiId: str,
             apiHash: str,
-            sessionDirPath: str,
+            sessionPrifix: str,
             clientCount: int = 3,
             papaPhone: str = '') -> None:
         self._apiId = apiId
@@ -178,7 +178,7 @@ class _TgNiUsers():
         self._clientInfoList = []
 
         self.clientCount = clientCount if clientCount > 0 else 3
-        self.chanDataNiUsers = _TgChanData_NiUsers(sessionDirPath, papaPhone)
+        self.chanDataNiUsers = _TgChanData_NiUsers(sessionPrifix, papaPhone)
 
         # 父親帳戶 仿用戶的頭子
         self.ysUsablePapaClient = papaPhone != ''
@@ -415,14 +415,14 @@ class TgBaseTool(_TgNiUsers):
     def __init__(self,
             apiId: str,
             apiHash: str,
-            sessionDirPath: str,
+            sessionPrifix: str,
             clientCount: int = 3,
             papaPhone: str = 0):
         _TgNiUsers.__init__(
             self,
             apiId = apiId,
             apiHash = apiHash,
-            sessionDirPath = sessionDirPath,
+            sessionPrifix = sessionPrifix,
             clientCount = clientCount,
             papaPhone = papaPhone
         )
@@ -533,7 +533,7 @@ class TgBaseTool(_TgNiUsers):
 class tgTodoFunc():
     def getNiUsersStatusInfo():
         chanDataNiUsers = _TgChanData_NiUsers(
-            novice.py_dirname + '/' + novice.py_env['tgSessionDirPath'],
+            'telethon-' + novice.py_env['apiId'],
             novice.py_env['papaPhoneNumber']
         )
         usablePhones = chanDataNiUsers.getUsablePhones()
