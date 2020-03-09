@@ -2,9 +2,9 @@
 
 
 import typing
+import re
 import random
 import asyncio
-import json
 import utils.novice as novice
 from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
 
@@ -13,12 +13,20 @@ def run(args: list, _dirpy: str, _dirname: str):
     asyncio.run(asyncRun(args, _dirpy, _dirname))
 
 async def asyncRun(args: list, _dirpy: str, _dirname: str):
-    forwardPeersTxt = args[1]
-    url = args[2]
-    msg = args[3]
+    if len(args) < 3:
+        raise ValueError('Usage: <forwardPeersTxt> <forwardLink>')
 
-    mainGroup = novice.py_env['peers']['adChannle']
+    forwardPeersTxt = args[1]
+    forwardLink = args[2]
+
     forwardPeers = forwardPeersTxt.split(',')
+
+    regexForwardLink = r'^https:\/\/t\.me\/([^\/]+)\/(\d+)$'
+    matchForwardLink = re.search(regexForwardLink, forwardLink)
+    if not matchForwardLink:
+        raise ValueError('轉傳來源鏈結 "{}" 不如預期'.format(forwardLink))
+    forwardGroup = matchForwardLink.group(1)
+    forwardMessageId = int(matchForwardLink.group(2))
 
     # 用於打印日誌
     runId = random.randrange(1000000, 9999999)
@@ -33,18 +41,6 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             papaPhone = novice.py_env['papaPhoneNumber']
         )
         await tgTool.init()
-    except Exception as err:
-        latestStatus += ' (失敗)'
-        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
-        raise err
-
-    try:
-        latestStatus = '炸群進度： 上傳圖片...'
-        novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
-        messageId = await _sendFile(tgTool, mainGroup, url, msg)
-
-        if messageId == -1:
-            raise Exception('Use Papa send file fail. (url: {}, msg: {})'.format(url, msg))
     except Exception as err:
         latestStatus += ' (失敗)'
         novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
@@ -74,10 +70,15 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             ))
             try:
                 forwardPeer = finalPeers[idx]
-                await tgTool.joinGroup(client, forwardPeer)
+
+                # `client.get_entity` 是一項昂貴的操作
+                inputPeer = await client.get_entity(forwardPeer)
+                if type(inputPeer) != telethon.types.User:
+                    await tgTool.joinGroup(client, forwardPeer)
+
                 await client(telethon.functions.messages.ForwardMessagesRequest(
-                    from_peer = mainGroup,
-                    id = [messageId],
+                    from_peer = forwardGroup,
+                    id = [forwardMessageId],
                     to_peer = forwardPeer,
                     random_id = [tgTool.getRandId()]
                 ))
@@ -136,10 +137,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
                     novice.logNeedle.push(
                         'Invalid Peer Error({}): {}'.format(errType, err)
                     )
-                    tgTool.chanData.pushGuy(
-                        await client.get_entity(forwardPeer),
-                        err
-                    )
+                    tgTool.chanData.pushGuy(inputPeer, err)
                     idx += 1
                 elif novice.indexOf(_knownErrorTypeList, errType) != -1:
                     novice.logNeedle.push(
@@ -165,7 +163,6 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         raise err
 
 
-# https://tl.telethon.dev/methods/channels/join_channel.html
 # https://tl.telethon.dev/methods/messages/forward_messages.html
 _invalidMessageErrorTypeList = [
     telethon.errors.MediaEmptyError,
@@ -198,27 +195,6 @@ _knownErrorTypeList = [
     telethon.errors.UserIsBotError,
     telethon.errors.YouBlockedUserError,
 ]
-
-async def _sendFile(tgTool: TgBaseTool, group: str, url: str, msg: str = '') -> int:
-    async with tgTool.usePapaClient() as client:
-        inputFile = await client.upload_file(url)
-
-        rtnUpdates = await client(telethon.functions.messages.SendMediaRequest(
-            peer = group,
-            media = telethon.types.InputMediaUploadedPhoto(
-                file = inputFile,
-                ttl_seconds = None
-            ),
-            message = msg
-        ))
-
-        messageId = -1
-        for update in rtnUpdates.updates:
-            if type(update) == telethon.types.UpdateMessageID:
-                messageId = update.id
-                break
-
-    return messageId
 
 def _filterGuy(tgTool: TgBaseTool, mainList: typing.List[str]) -> typing.List[str]:
     blackGuyList = tgTool.chanData.data['blackGuy']['list']

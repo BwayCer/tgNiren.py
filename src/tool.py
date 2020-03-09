@@ -7,6 +7,7 @@ import re
 _origArgs = sys.argv
 _pyTool = {
     'adTool.sendAdPhoto': 'adTool/sendAdPhoto',
+    'adTool.sendForward': 'adTool/sendForward',
     'adTool.getParticipants': 'adTool/getParticipants',
     'adTool.tuckUserIntoChannel': 'adTool/tuckUserIntoChannel',
     'tgPing.interactiveLogin.simple': 'tgPing/simple-interactiveLogin',
