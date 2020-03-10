@@ -59,3 +59,37 @@ _pyTool = {
 ./src/tool.py sayHi Ab Cde [...]
 ```
 
+
+
+## Kubernetes 布署
+
+
+```
+# 上傳環境文件
+tar -zcvf env.tar.gz ./envfile/env.yml ./envfile/tgSession/telethon-*
+sutil cp env.tar.gz gs://<Bucket Name>/env.tar.gz
+
+# 推送環境容器
+# https://cloud.google.com/container-registry/docs/pushing-and-pulling
+docker build -t us.gcr.io/tg-tool/k8small  -f ./vmfile/webServer/k8small.dockerfile  ./vmfile/webServer
+docker build -t us.gcr.io/tg-tool/tg-niren -f ./vmfile/webServer/tg-niren.dockerfile .
+docker push us.gcr.io/tg-tool/k8small
+docker push us.gcr.io/tg-tool/tg-niren
+
+# K8s 布署
+./vmfile/webServer/bin/k8sketch.sh ./vmfile/webServer/repo/k8s/
+
+# kubectl delete deployments <Deployments Name>
+# kubectl delete services <Services Name>
+# kubectl delete ingresses <Ingresses Name>
+
+kubectl apply -f "./vmfile/webServer/repo/k8s/pvc-container.yml"
+# or `kubectl create -f "path/to/file.yml"`
+
+# 安裝環境文件
+kubectl exec -it <Pod Name> sh
+curl https://storage.googleapis.com/<Bucket Name>/env.tar.gz -o - | tar -zxv --no-same-owner -C .
+
+kubectl apply -f "./vmfile/webServer/repo/k8s/tg-niren.yml"
+```
+

@@ -1,0 +1,47 @@
+
+---
+## deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${appName}-deployment
+spec:
+  selector:
+    matchLabels:
+      app: ${appName}-pod
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ${appName}-pod
+    spec:
+      containers:
+      - name: ${appName}-container
+        image: us.gcr.io/tg-tool/tg-niren:latest
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+          - name: ${envfileName}-volume
+            mountPath: /app/envfile
+      volumes:
+      - name: ${envfileName}-volume
+        persistentVolumeClaim:
+          claimName: ${envfileName}
+
+---
+## service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${appName}-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: ${appName}-deployment
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 5000
+

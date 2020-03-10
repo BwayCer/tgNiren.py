@@ -1,0 +1,50 @@
+
+---
+## PersistentVolumeClaim
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ${envfileName}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 128Mi
+
+---
+## deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${pvcContainer}
+spec:
+  selector:
+    matchLabels:
+      app: ${pvcContainer}-pod
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ${pvcContainer}-pod
+    spec:
+      containers:
+      - name: pvc-${envfileName}-container
+        image: us.gcr.io/tg-tool/k8small:latest
+        volumeMounts:
+          - name: ${envfileName}-volume
+            mountPath: /app/${envfileName}
+        # readinessProbe:
+        #  exec:
+        #    command:
+        #    - cat
+        #    - /tmp/healthy
+        #  initialDelaySeconds: 5
+        #  periodSeconds: 30
+      volumes:
+      - name: ${envfileName}-volume
+        persistentVolumeClaim:
+          claimName: ${envfileName}
+
