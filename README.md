@@ -11,36 +11,25 @@ Use [Telethon](https://github.com/LonamiWebs/Telethon) to operate niren user.
 ## 使用方式
 
 
-```
-pipenv install
-// or
-// pip install -r requirements.txt
+### Telegram 小工具服務器
 
-cp ./src/env.example.yml ./src/env.yml
-# edit ./src/env.yml
-
-docker run -d -p 6379:6379 redislabs/rejson:latest
-
-pipenv run ./src/tgNiren.py
-```
-
-
-**小工具：**
 
 ```
-# 圖片訊息廣告
-#   { forwardPeerList: ["someChannelName"[, ...]],   # 轉傳的對象清單
-#     url: "./path/to/some.jpg",
-#     msg: "文字訊息" }
-pipenv run ./src/tool.py adTool.sendAdPhoto "{\"forwardPeerList\":[\"someChannelName\"],\"url\":\"./path/to/some.jpg\",\"msg\":\"文字訊息\"}"
+docker build -t local/devtool:tgNiren -f ./vmfile/devtool/Dockerfile ./vmfile/devtool
+alias devtool_tgNiren="docker run -it --network host -v \"$PWD:/app\" local/devtool:tgNiren"
 
-# 塞人入群
-pipenv run ./src/tool.py adTool.tuckUserIntoChannel <仿用戶的數量> <用戶來源群> <用戶導入群>
+devtool_tgNiren pipenv install
+
+cp ./envfile/env.example.yml ./envfile/env.yml
+# edit ./envfile/env.yml
+# creat telethon session for Telegram connect
+
+devtool_tgNiren pipenv run ./src/webServer.py
 ```
 
 
 
-## 小工具
+### 小工具
 
 
 ```
