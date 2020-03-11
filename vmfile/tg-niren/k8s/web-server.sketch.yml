@@ -37,6 +37,7 @@ kind: Service
 metadata:
   name: ${appName}-service
 spec:
+  # type: NodePort
   type: LoadBalancer
   selector:
     app: ${appName}-pod
@@ -44,4 +45,21 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 5000
+  # loadBalancerIP: 104.199.112.83
+
+# ---
+# ## ingress
+#
+# apiVersion: extensions/v1beta1
+# kind: Ingress
+# metadata:
+#   name: ${appName}-ingress
+# spec:
+#   rules:
+#   - http:
+#       paths:
+#       - path: /
+#         backend:
+#           serviceName: ${appName}-service
+#           servicePort: 8080
 

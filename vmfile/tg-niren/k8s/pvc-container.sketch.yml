@@ -1,5 +1,22 @@
 
 ---
+## PersistentVolume
+
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+  # name: ${envfileName}-pv
+# spec:
+  # storageClassName: ${envfileName}
+  # persistentVolumeReclaimPolicy: Retain
+  # capacity:
+    # storage: 20Gi
+  # accessModes:
+    # - ReadWriteMany
+  # hostPath:
+    # path: "/mnt/local-storage-www"
+
+---
 ## PersistentVolumeClaim
 
 apiVersion: v1
