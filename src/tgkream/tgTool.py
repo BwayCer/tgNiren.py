@@ -68,7 +68,6 @@ class _TgChanData_NiUsers(TgSession):
         if os.path.exists(sessionPath):
             os.remove(sessionPath)
 
-        self._pushCemeteryData_chanData(phoneNumber)
         niUsers = self.chanData.data['niUsers']
 
         locks = niUsers['lockList']
