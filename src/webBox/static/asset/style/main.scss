@@ -31,7 +31,7 @@ body {
     &_roomIds {
       @extend %scFormChild;
 
-      .makeInput {
+      .markInput {
         width: 18em;
       }
 
@@ -41,7 +41,7 @@ body {
         span {
           font-size: 0.6em;
         }
-        .makeInput {
+        .markInput {
           vertical-align: middle;
         }
       }
@@ -52,7 +52,7 @@ body {
     &_submit {
       @extend %scFormChild;
     }
-    .makeInput {
+    .markInput {
       margin-left: 1em;
       padding: 0.2em;
     }
@@ -84,11 +84,30 @@ body {
       }
       &_verifiedCode {
         @extend %scFormChild;
+
+        &_otherSentBtn {
+          margin-left: 0.4em;
+        }
+      }
+      &_password {
+        @extend %scFormChild;
+
+        &_deleteAccount {
+        }
+        .markSeparation {
+          margin: 0 0.4em;
+        }
+      }
+      &_signup {
+        @extend %scFormChild;
       }
       &_submit {
         @extend %scFormChild;
       }
-      .makeInput {
+      &_reset {
+        @extend %scFormChild;
+      }
+      .markInput {
         margin-left: 1em;
         padding: 0.2em;
       }

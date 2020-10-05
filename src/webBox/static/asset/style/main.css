@@ -21,11 +21,11 @@ body {
 .cPaperSlip_form {
   content: "";
 }
-.cPaperSlip_form .cLogin_pop_form_submit, .cPaperSlip_form .cLogin_pop_form_verifiedCode, .cPaperSlip_form .cLogin_pop_form_phone, .cPaperSlip_form .cPaperSlip_form_submit, .cPaperSlip_form .cPaperSlip_form_sourceLink, .cPaperSlip_form .cPaperSlip_form_roomIds {
+.cPaperSlip_form .cLogin_pop_form_reset, .cPaperSlip_form .cLogin_pop_form_submit, .cPaperSlip_form .cLogin_pop_form_signup, .cPaperSlip_form .cLogin_pop_form_password, .cPaperSlip_form .cLogin_pop_form_verifiedCode, .cPaperSlip_form .cLogin_pop_form_phone, .cPaperSlip_form .cPaperSlip_form_submit, .cPaperSlip_form .cPaperSlip_form_sourceLink, .cPaperSlip_form .cPaperSlip_form_roomIds {
   margin: 0.4em;
   display: block;
 }
-.cPaperSlip_form_roomIds .makeInput {
+.cPaperSlip_form_roomIds .markInput {
   width: 18em;
 }
 .cPaperSlip_form_roomIds_csvUpload {
@@ -34,10 +34,10 @@ body {
 .cPaperSlip_form_roomIds_csvUpload span {
   font-size: 0.6em;
 }
-.cPaperSlip_form_roomIds_csvUpload .makeInput {
+.cPaperSlip_form_roomIds_csvUpload .markInput {
   vertical-align: middle;
 }
-.cPaperSlip_form .makeInput {
+.cPaperSlip_form .markInput {
   margin-left: 1em;
   padding: 0.2em;
 }
@@ -54,11 +54,17 @@ body {
 .cLogin_pop_statusInfo {
   margin: 1em 0.4em;
 }
-.cLogin_pop_form .cLogin_pop_form_submit, .cLogin_pop_form .cLogin_pop_form_verifiedCode, .cLogin_pop_form .cLogin_pop_form_phone, .cLogin_pop_form .cPaperSlip_form_roomIds, .cLogin_pop_form .cPaperSlip_form_sourceLink, .cLogin_pop_form .cPaperSlip_form_submit {
+.cLogin_pop_form .cLogin_pop_form_reset, .cLogin_pop_form .cLogin_pop_form_submit, .cLogin_pop_form .cLogin_pop_form_signup, .cLogin_pop_form .cLogin_pop_form_password, .cLogin_pop_form .cLogin_pop_form_verifiedCode, .cLogin_pop_form .cLogin_pop_form_phone, .cLogin_pop_form .cPaperSlip_form_roomIds, .cLogin_pop_form .cPaperSlip_form_sourceLink, .cLogin_pop_form .cPaperSlip_form_submit {
   margin: 0.4em;
   display: block;
 }
-.cLogin_pop_form .makeInput {
+.cLogin_pop_form_verifiedCode_otherSentBtn {
+  margin-left: 0.4em;
+}
+.cLogin_pop_form_password .markSeparation {
+  margin: 0 0.4em;
+}
+.cLogin_pop_form .markInput {
   margin-left: 1em;
   padding: 0.2em;
 }

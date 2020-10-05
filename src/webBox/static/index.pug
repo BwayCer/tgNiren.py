@@ -21,19 +21,19 @@ html
       form.cPaperSlip_form
         .cPaperSlip_form_roomIds
           span 用戶/群組 ID：
-          input.makeInput(
+          input.markInput(
             type="text"
             placeholder="用戶/群組 ID (以逗點分隔)"
           )
           .cPaperSlip_form_roomIds_csvUpload
             | （CSV 批量匯入：
-            input.makeInput(
+            input.markInput(
               type="file"
             )
             | ）
         .cPaperSlip_form_sourceLink
           span 被轉發的群組來源 ID：
-          input.makeInput(
+          input.markInput(
             type="text"
             placeholder="被轉發的來源鏈結"
           )
@@ -43,21 +43,40 @@ html
     section.cLogin
       .cLogin_pop
         .cLogin_pop_title
-          span 登入 (非註冊)
+          span 登入
         .cLogin_pop_statusInfo
         form.cLogin_pop_form
           .cLogin_pop_form_phone
             span 手機號碼：
-            input.makeInput(
+            input.markInput(
               type="text"
               placeholder="手機號碼"
             )
           .cLogin_pop_form_verifiedCode
             span 驗證碼：
-            input.makeInput(
+            input.markInput(
               type="text"
               placeholder="驗證碼"
             )
+            button.cLogin_pop_form_verifiedCode_otherSentBtn
+              span 以其他方式寄送
+          .cLogin_pop_form_password
+            span 二次驗證碼：
+            input.markInput(
+              type="text"
+              placeholder="二次驗證碼"
+            )
+            span.markSeparation or
+            button.cLogin_pop_form_password_deleteAccount
+              span 重設帳戶
+          .cLogin_pop_form_signup
+            span 名稱：
+            input.markInput(
+              type="text"
+              placeholder="名稱"
+            )
           button.cLogin_pop_form_submit
-            span 送出
+            span 下一步
+          button.cLogin_pop_form_reset
+            span 重置
 
