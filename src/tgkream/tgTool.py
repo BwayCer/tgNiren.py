@@ -66,7 +66,7 @@ class _TgChanData_NiUsers(TgSession):
     def pushCemeteryData(self, phoneNumber: str, err: Exception) -> None:
         sessionPath = self.getSessionPath(phoneNumber)
         if os.path.exists(sessionPath):
-            os.remove(sessionPath)
+            self.mvSessionPath(phoneNumber, toAddPrifix = 'cemetery')
 
         niUsers = self.chanData.data['niUsers']
 

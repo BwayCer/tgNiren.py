@@ -50,13 +50,32 @@ class TgSession():
                     phones.append(phoneNumber)
         return phones
 
-    def getSessionPath(self, phoneNumber: str, noExt: bool = False):
+    def getSessionPath(self,
+            phoneNumber: str,
+            addPrifix: str = '',
+            noExt: bool = False) -> str:
         return '{}/{}-{}{}'.format(
             self._sessionDirPath,
-            self._sessionPrifix,
+            self._sessionPrifix \
+                + ('' if addPrifix == '' else '-' + addPrifix),
             phoneNumber,
             '' if noExt else '.session'
         )
+
+    def mvSessionPath(self,
+            phoneNumber: str,
+            fromAddPrifix: str = '',
+            toAddPrifix: str = '') -> None:
+        fromPath = self.getSessionPath(
+            phoneNumber,
+            addPrifix = fromAddPrifix,
+        )
+        toPath = self.getSessionPath(
+            phoneNumber,
+            addPrifix = toAddPrifix
+        )
+        if os.path.exists(fromPath):
+            os.rename(fromPath, toPath)
 
 
 def TgDefaultInit(TgClass, *args, **kwargs):
