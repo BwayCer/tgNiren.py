@@ -2,7 +2,6 @@
 
 
 import asyncio
-import utils.novice as novice
 from tgkream.tgSimple import TgDefaultInit, TgSimple
 
 
@@ -18,8 +17,6 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str) -> list:
     tgTool = TgDefaultInit(TgSimple)
     client = await tgTool.login(phoneNumber)
 
-    if client == None:
-        raise Exception('Failed Login')
-    else:
+    if client != None:
         print(await client.get_me())
 
