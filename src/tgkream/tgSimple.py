@@ -101,10 +101,6 @@ async def _interactiveLogin(phoneNumber: str, client: TelegramClient) -> bool:
     print('--> client.connect()')
     try:
         await client.connect()
-    except telethon.errors.PhoneNumberBannedError as err:
-        return False
-        print('The phone {} is Banned.'.format(phoneNumber))
-        print('please run `rm {}*`'.format(sessionPath))
     except Exception as err:
         print('{} Error: {} (from: {})'.format(type(err), err, 'client.connect()'))
         raise err

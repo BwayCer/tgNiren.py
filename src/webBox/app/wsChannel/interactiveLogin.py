@@ -705,24 +705,6 @@ async def _checkConnectClient(
     try:
         novice.logNeedle.push('(runId: {}) client.connect()'.format(runIdCode))
         await client.connect()
-    except telethon.errors.PhoneNumberBannedError as err:
-        errTypeName = err.__class__.__name__
-        errMsg = _getMessage.catchError(
-            runIdCode,
-            'client.connect()',
-            _sendCodeKnownErrorTypeInfo,
-            errTypeName
-        )
-        _mvSessionPath(
-            runIdCode,
-            phoneNumber,
-            fromAddPrifix = tgSessionAddPrifix,
-            toAddPrifix = 'banned'
-        )
-        return (
-            {'code': -3, 'messageType': errTypeName, 'message': errMsg},
-            None
-        )
     except Exception as err:
         errTypeName = err.__class__.__name__
         errMsg = _getMessage.catchError(runIdCode, 'client.connect()', {}, errTypeName)

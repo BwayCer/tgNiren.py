@@ -287,8 +287,6 @@ class _TgNiUsers():
         )
         try:
             await client.connect()
-        # except tele.errors.PhoneNumberBannedError as err:
-            # print('rm telethon-{}.*'.format(phoneNumber))
         except Exception as err:
             print('{} Error: {}', type(err), err)
             raise err
