@@ -126,7 +126,14 @@ class _WsHouse():
         house = self.house
         if roomName in house:
             connectedSockets = house[roomName]
-            connectedSockets.remove(socket)
+            if len(connectedSockets) > 1:
+                connectedSockets.remove(socket)
+            else:
+                del house[roomName]
+
+    def connectLength(self, roomName: str) -> None:
+        house = self.house
+        return len(house[roomName]) if roomName in house else 0
 
     async def send(self, roomName: str, payload: typing.Any) -> None:
         house = self.house
