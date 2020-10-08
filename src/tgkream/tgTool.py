@@ -121,17 +121,16 @@ class _TgChanData_NiUsers(TgSession):
             if phoneIdx != -1:
                 del locks[phoneIdx]
 
-    def unlockPhones(self, *args):
+    def unlockPhones(self, *args) -> None:
         pickPhones = self.pickPhones
         if len(args) == 0:
             self._unlockPhones_chanData(pickPhones)
             pickPhones.clear()
         else:
-            unlockPhones = args[0]
-            self._unlockPhones_chanData(unlockPhones)
-            for phoneNumber in unlockPhones:
+            for phoneNumber in args:
                 phoneIdx = novice.indexOf(pickPhones, phoneNumber)
                 if phoneIdx != -1:
+                    self._unlockPhones_chanData([phoneNumber])
                     del pickPhones[phoneIdx]
         self.chanData.store()
 
@@ -256,7 +255,7 @@ class _TgNiUsers():
                     if len(pickClients) == clientCount:
                         return pickClients
 
-        chanDataNiUsers.unlockPhones(pickPhones)
+        chanDataNiUsers.unlockPhones(*pickPhones)
         for client in pickClients:
             await client.disconnect()
         return None
@@ -302,13 +301,24 @@ class _TgNiUsers():
 
     async def release(self, *args):
         clientInfoList = self._clientInfoList
-        for clientInfo in clientInfoList:
-            # 若是無 client，`client.disconnect()` 的回傳值是 None ?!
-            result = clientInfo['client'].disconnect()
-            if asyncio.iscoroutine(result):
-                result = await result
-        clientInfoList.clear()
-        self.chanDataNiUsers.unlockPhones(*args)
+        if len(args) == 0:
+            for clientInfo in clientInfoList:
+                # 若是無 client，`client.disconnect()` 的回傳值是 None ?!
+                result = clientInfo['client'].disconnect()
+                if asyncio.iscoroutine(result):
+                    result = await result
+            clientInfoList.clear()
+            self.chanDataNiUsers.unlockPhones()
+        else:
+            for phoneNumber in args:
+                for clientInfoIdx in range(len(clientInfoList) - 1, -1, -1):
+                    clientInfo = clientInfoList[clientInfoIdx]
+                    if clientInfo['id'] == phoneNumber:
+                        del clientInfoList[clientInfoIdx]
+                        result = clientInfo['client'].disconnect()
+                        if asyncio.iscoroutine(result):
+                            await result
+                        self.chanDataNiUsers.unlockPhones(phoneNumber)
 
     async def reinit(self):
         await self.release()
@@ -344,7 +354,7 @@ class _TgNiUsers():
 
             await asyncio.sleep(1)
 
-        self.chanDataNiUsers.unlockPhones([papaPhone])
+        self.chanDataNiUsers.unlockPhones(papaPhone)
 
         if error != None:
             raise error
