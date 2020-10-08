@@ -6,7 +6,7 @@ import asyncio
 import json
 import utils.novice as novice
 import webBox.serverMix as serverMix
-from tgkream.tgTool import tgTodoFunc
+import webBox.app.tgToolUtils as tgToolUtils
 
 
 def subscribe(pageId: str, prop: typing.Any = None) -> dict:
@@ -23,9 +23,9 @@ def subscribe(pageId: str, prop: typing.Any = None) -> dict:
 _latestStatus_subscriber = []
 _latestStatus_prevStatus = {'allCount': 0, 'lockCount': 0}
 
-def _latestStatus():
+async def _latestStatus():
     while True:
-        niUsersStatusInfo = tgTodoFunc.getNiUsersStatusInfo()
+        niUsersStatusInfo = await tgToolUtils.getNiUsersStatusInfo()
         allCount =  niUsersStatusInfo['allCount']
         lockCount =  niUsersStatusInfo['lockCount']
         isChange = _latestStatus_prevStatus['allCount'] != allCount \

@@ -8,26 +8,20 @@ import asyncio
 import json
 import utils.novice as novice
 import webBox.serverMix as serverMix
-from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool, tgTodoFunc
+from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
+import webBox.app.tgToolUtils as tgToolUtils
 
 
 __all__ = ['paperSlip']
 
 
-def paperSlip(pageId: str, prop: typing.Any = None) -> dict:
+async def paperSlip(pageId: str, prop: typing.Any = None) -> dict:
     innerSession = serverMix.innerSession.get(pageId)
-    niUsersStatusInfo = tgTodoFunc.getNiUsersStatusInfo()
     if innerSession['runing']:
         return {
             'code': -1,
             'message': '工具執行中。',
         }
-    elif niUsersStatusInfo['allCount'] - niUsersStatusInfo['lockCount'] < 3:
-        return {
-            'code': -1,
-            'message': '工具目前無法使用。',
-        }
-
 
     if type(prop) != dict:
         return {
@@ -64,13 +58,19 @@ def paperSlip(pageId: str, prop: typing.Any = None) -> dict:
     }
 
 async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
+    niUsersStatusInfo = await tgToolUtils.getNiUsersStatusInfo()
+    usableNiUsersCount = niUsersStatusInfo['usableCount']
+    if usableNiUsersCount < 3:
+        await _paperSlipAction_send(pageId, -1, '工具目前無法使用。')
+        return
+
     forwardPeers = data['forwardPeerList']
     mainGroup = data['mainGroup']
     messageId = data['messageId']
 
     # 用於打印日誌
     runId = random.randrange(1000000, 9999999)
-    usedClientCount = 3
+    usedClientCount = int(usableNiUsersCount / 4)
     latestStatus = ''
     try:
         latestStatus = '炸群進度： 初始化...'

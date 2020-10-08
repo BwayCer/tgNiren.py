@@ -14,7 +14,7 @@ import tgkream.errors as errors
 from tgkream.utils import TgTypeing, TgSession, TgDefaultInit
 
 
-__all__ = ['errors', 'telethon', 'TgTypeing', 'TgDefaultInit', 'TgBaseTool', 'tgTodoFunc']
+__all__ = ['errors', 'telethon', 'TgTypeing', 'TgDefaultInit', 'TgBaseTool']
 
 
 TelegramClient = telethon.TelegramClient
@@ -197,7 +197,10 @@ class _TgNiUsers():
             self.chanDataNiUsers.unlockPhones()
 
     async def init(self) -> None:
-        clientCount = self.clientCount
+        clientCount = self.clientCount - len(self._clientInfoList)
+        if not clientCount > 0:
+            return
+
         chanDataNiUsers = self.chanDataNiUsers
         usablePhones = chanDataNiUsers.getUsablePhones()
         usablePhonesLength = len(usablePhones)
@@ -296,6 +299,18 @@ class _TgNiUsers():
             )
             chanDataNiUsers.pushCemeteryData(phoneNumber, err)
             return None
+
+        return client
+
+    async def login(self, phoneNumber: str) -> typing.Union[None, TelegramClient]:
+        chanDataNiUsers = self.chanDataNiUsers
+
+        if chanDataNiUsers.lockPhone(phoneNumber):
+            client = await self._login(phoneNumber)
+            if client == None:
+                chanDataNiUsers.unlockPhones(phoneNumber)
+            else:
+                await self._init_register([client])
 
         return client
 
@@ -533,19 +548,4 @@ class TgBaseTool(_TgNiUsers):
             pickIdx += pageAmount
 
         return (pickRealIdx, users)
-
-
-# TODO 因時程關係未拆分程式碼
-
-class tgTodoFunc():
-    def getNiUsersStatusInfo():
-        chanDataNiUsers = _TgChanData_NiUsers(
-            'telethon-' + novice.py_env['apiId'],
-            novice.py_env['papaPhoneNumber']
-        )
-        usablePhones = chanDataNiUsers.getUsablePhones()
-        niUsers = chanDataNiUsers.chanData.data['niUsers']
-        bands = niUsers['bandList']
-        locks = niUsers['lockList']
-        return {'allCount': len(usablePhones), 'lockCount':  len(bands) + len(locks)}
 
