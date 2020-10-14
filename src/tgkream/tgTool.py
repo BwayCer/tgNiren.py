@@ -71,20 +71,20 @@ class _TgChanData_NiUsers(TgSession):
         niUsers = self.chanData.data['niUsers']
 
         locks = niUsers['lockList']
-        locksIdx = novice.indexOf(locks, phoneNumber)
-        if locksIdx != -1:
-            del locks[locksIdx]
+        lockIdx = novice.indexOf(locks, phoneNumber)
+        if lockIdx != -1:
+            del locks[lockIdx]
 
         bands = niUsers['bandList']
-        bandsIdx = novice.indexOf(bands, phoneNumber)
-        if bandsIdx != -1:
-            del bands[bandsIdx]
+        bandIdx = novice.indexOf(bands, phoneNumber)
+        if bandIdx != -1:
+            del bands[bandIdx]
             bandInfos = niUsers['bandInfos']
             bandInfosLength = len(bandInfos)
-            for bandInfosIdx in range(bandInfosLength):
-                bandInfo = bandInfos[bandInfosIdx]
+            for bandInfoIdx in range(bandInfosLength):
+                bandInfo = bandInfos[bandInfoIdx]
                 if bandInfo['id'] == phoneNumber:
-                    del bandInfos[bandInfosIdx]
+                    del bandInfos[bandInfoIdx]
                     break
 
         niUsers['cemetery'].append({
@@ -321,7 +321,7 @@ class _TgNiUsers():
                 # 若是無 client，`client.disconnect()` 的回傳值是 None ?!
                 result = clientInfo['client'].disconnect()
                 if asyncio.iscoroutine(result):
-                    result = await result
+                    await result
             clientInfoList.clear()
             self.chanDataNiUsers.unlockPhones()
         else:
@@ -422,7 +422,7 @@ class _TgNiUsers():
             self._currentClient = clientInfoList[pickIdx]['client']
             if whichNiUsers:
                 yield {
-                    'id':clientInfo['id'],
+                    'id': clientInfo['id'],
                     'userId': clientInfo['userId'],
                     'client': self._currentClient,
                 }

@@ -97,7 +97,15 @@ async def _niGraph(pageId: str, receiveDatasTxt: str) -> None:
 
                 pyImportPath = _wsChannelDirPyImportPath + '.' + fileName
                 # TODO 不知為 `importlib.import_module()` 何會拋出以下訊息
-                # Executing <Task pending name='Task-21' coro=<ASGIWebsocketConnection.handle_websocket() running at /home/bwaycer/ys/gitman/crepo/tgNiren.py/.venv/lib/python3.8/site-packages/quart/asgi.py:147> wait_for=<Future pending cb=[<TaskWakeupMethWrapper object at 0x7f72d22eb250>()] created at /usr/lib/python3.8/asyncio/base_events.py:422> cb=[_wait.<locals>._on_completion() at /usr/lib/python3.8/asyncio/tasks.py:507] created at /home/bwaycer/ys/gitman/crepo/tgNiren.py/.venv/lib/python3.8/site-packages/quart/asgi.py:110> took 0.189 seconds
+                # Executing
+                #   <Task pending name='Task-21'
+                #     coro=<ASGIWebsocketConnection.handle_websocket() running at /home/bwaycer/ys/gitman/crepo/tgNiren.py/.venv/lib/python3.8/site-packages/quart/asgi.py:147>
+                #     wait_for=<Future pending
+                #                cb=[<TaskWakeupMethWrapper object at 0x7f72d22eb250>()]
+                #                created at /usr/lib/python3.8/asyncio/base_events.py:422>
+                #     cb=[_wait.<locals>._on_completion() at /usr/lib/python3.8/asyncio/tasks.py:507]
+                #     created at /home/bwaycer/ys/gitman/crepo/tgNiren.py/.venv/lib/python3.8/site-packages/quart/asgi.py:110>
+                # took 0.189 seconds
                 module = importlib.import_module(pyImportPath)
                 if not hasattr(module, methodName):
                     raise KeyError('wschan: 要求的方法不存在')

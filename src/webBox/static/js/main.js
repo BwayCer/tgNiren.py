@@ -351,7 +351,8 @@
                     console.error('adTool.paperSlip', receive);
                 }
                 helPaperSlipStatus.innerText = receive.message;
-            };
+            }
+        ;
         let _regexWord = /\w/;
         let _regexSourceLink = /^https:\/\/t\.me\/([^\/]+)\/(\d+)$/;
         document.querySelector('.cPaperSlip_form_submit')

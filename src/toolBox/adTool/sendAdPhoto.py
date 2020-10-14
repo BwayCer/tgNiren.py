@@ -30,7 +30,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
         tgTool = TgDefaultInit(
             TgBaseTool,
-            clientCount = 3,
+            clientCount = usedClientCount,
             papaPhone = novice.py_env['papaPhoneNumber']
         )
         await tgTool.init()

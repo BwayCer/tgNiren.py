@@ -32,7 +32,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
     print('-> 登入用戶')
     client = await tgTool.login(phoneNumber)
     myInfo = await client.get_me()
-    print('--> I\m {} {} ({}) and my phone is +{}.'.format(
+    print('--> I\'m {} {} ({}) and my phone is +{}.'.format(
         str(myInfo.first_name),
         str(myInfo.last_name),
         str(myInfo.username),
