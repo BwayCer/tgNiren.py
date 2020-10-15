@@ -94,7 +94,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
         finalPeersLength = len(finalPeers)
         bandNiUserList = []
         idx = 0
-        async for clientInfo in tgTool.iterPickClient(-1, 1, whichNiUsers = True):
+        async for clientInfo in tgTool.iterPickClient(-1, 1):
             readableIdx = idx + 1
             myId = clientInfo['id']
             client = clientInfo['client']

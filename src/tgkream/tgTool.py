@@ -182,7 +182,7 @@ class _TgNiUsers():
         self.ysUsablePapaClient = papaPhone != ''
         self._papaPhone = papaPhone
 
-        self._currentClient = None
+        self._currentClientInfo = None
 
         # 異常退出時執行
         @novice.dOnExit
@@ -374,28 +374,23 @@ class _TgNiUsers():
         if error != None:
             raise error
 
-    async def pickCurrentClient(self, client: TelegramClient = None) -> TelegramClient:
-        if client != None:
-            self._currentClient = client
-        elif self._currentClient == None:
-            await self.pickClient()
+    def pickCurrentClient(self) -> dict:
+        return self._currentClientInfo \
+            if self._currentClientInfo != None else self.pickClient()
 
-        return self._currentClient
-
-    async def pickClient(self) -> TelegramClient:
+    def pickClient(self) -> dict:
         clientInfoList = self._clientInfoList
         self._pickClientIdx += 1
         pickIdx = self._pickClientIdx % len(clientInfoList)
-        self._currentClient = clientInfoList[pickIdx]['client']
-        return self._currentClient
+        self._currentClientInfo = clientInfoList[pickIdx].copy()
+        return self._currentClientInfo
 
     # TODO
     # 當調用的迴圈用 break 跳出時，無法使用 try finally 捕獲，
-    # 因而無法自動回復 `self._currentClient` 的原始值
+    # 因而無法自動回復 `self._currentClientInfo` 的原始值
     async def iterPickClient(self,
             circleLimit: int = 1,
-            circleInterval: float = 1,
-            whichNiUsers: bool = False) -> TelegramClient:
+            circleInterval: float = 1) -> dict:
         if not (circleLimit == -1 or 0 < circleLimit):
             return
 
@@ -418,16 +413,8 @@ class _TgNiUsers():
                 else:
                     prevTimeMs = nowTimeMs
 
-            clientInfo = clientInfoList[pickIdx]
-            self._currentClient = clientInfoList[pickIdx]['client']
-            if whichNiUsers:
-                yield {
-                    'id': clientInfo['id'],
-                    'userId': clientInfo['userId'],
-                    'client': self._currentClient,
-                }
-            else:
-                yield self._currentClient
+            clientInfo = self._currentClientInfo = clientInfoList[pickIdx].copy()
+            yield clientInfo
 
             idxLoop += 1
             if 0 < maxLoopTimes and maxLoopTimes <= idxLoop:
@@ -456,7 +443,7 @@ class TgBaseTool(_TgNiUsers):
     # TgTypeing.Peer
     async def getPeerTypeName(self, peer: TgTypeing.AutoInputPeer) -> str:
         if type(peer) == str:
-            client = await self.pickCurrentClient()
+            client = self.pickCurrentClient()['client']
             inputPeer = await client.get_entity(peer)
         else:
             inputPeer = peer

@@ -82,14 +82,14 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             raise Exception(errMsg)
 
 async def _bestSingleCount(tgTool: TgBaseTool, groupPeer: str, maxCount: str) -> int:
-    client = await tgTool.pickClient()
+    client = tgTool.pickClient()['client']
     await tgTool.joinGroup(client, groupPeer)
     _, users = await tgTool.getParticipants(client, groupPeer)
     bestSingleCount = int(len(users) / tgTool.clientCount)
     return bestSingleCount if bestSingleCount < maxCount else 50
 
 async def _getExcludedUserIdList(tgTool: TgBaseTool, groupPeer: str) -> list:
-    client = await tgTool.pickClient()
+    client = tgTool.pickClient()['client']
     await tgTool.joinGroup(client, groupPeer)
     _, users = await tgTool.getParticipants(client, groupPeer)
     userIds = []
@@ -134,16 +134,16 @@ async def _iterTuckInfo(
     pickUserInfos = {}
 
     loopTimes = 0
-    async for client in tgTool.iterPickClient(-1, bestIntervalTime):
-        myInfo = await client.get_me()
-        myPhone = myInfo.phone
+    async for clientInfo in tgTool.iterPickClient(-1, bestIntervalTime):
+        myId = clientInfo['id']
+        client = clientInfo['client']
 
-        if myPhone in pickUserInfos:
-            pickUserInfo = pickUserInfos[myPhone]
+        if myId in pickUserInfos:
+            pickUserInfo = pickUserInfos[myId]
             if pickUserInfo['idx'] == -1:
                 continue
         else:
-            pickUserInfo = pickUserInfos[myPhone] = {'idx': -1, 'count': 0, 'list': []}
+            pickUserInfo = pickUserInfos[myId] = {'idx': -1, 'count': 0, 'list': []}
 
         pickIdx = pickUserInfo['idx']
         pickList = pickUserInfo['list']
@@ -152,7 +152,7 @@ async def _iterTuckInfo(
             user = pickList[pickIdx]
             pickCount = pickUserInfo['count'] = pickUserInfo['count'] + 1
             yield {
-                'id': myPhone,
+                'id': myId,
                 'client': client,
                 'user': user,
                 'count': pickCount,

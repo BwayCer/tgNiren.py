@@ -56,7 +56,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         finalPeersLength = len(finalPeers)
         bandNiUserList = []
         idx = 0
-        async for clientInfo in tgTool.iterPickClient(-1, 1, whichNiUsers = True):
+        async for clientInfo in tgTool.iterPickClient(-1, 1):
             readableIdx = idx + 1
             myId = clientInfo['id']
             client = clientInfo['client']

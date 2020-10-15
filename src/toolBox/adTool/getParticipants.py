@@ -22,7 +22,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str) -> list:
     await tgTool.init()
 
     try:
-        client = await tgTool.pickClient()
+        client = tgTool.pickClient()['client']
         await tgTool.joinGroup(client, groupPeer)
         _, users = await tgTool.getParticipants(client, groupPeer)
         userIds = []
