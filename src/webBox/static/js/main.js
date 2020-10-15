@@ -74,16 +74,16 @@
     })();
 
     (_ => {
-        const helLoginPopStatus = document.querySelector('.cLogin_pop_statusInfo');
-        const helFormPhone = document.querySelector('.cLogin_pop_form_phone > .markInput');
-        const helFormVerifiedCode = document.querySelector('.cLogin_pop_form_verifiedCode > .markInput');
-        const helFormPassword = document.querySelector('.cLogin_pop_form_password > .markInput');
-        const helFormName = document.querySelector('.cLogin_pop_form_signup > .markInput');
+        const helLoginPopStatus = document.querySelector('.cLogin_status');
+        const helFormPhone = document.querySelector('.cLogin_form_phone > .markInput');
+        const helFormVerifiedCode = document.querySelector('.cLogin_form_verifiedCode > .markInput');
+        const helFormPassword = document.querySelector('.cLogin_form_password > .markInput');
+        const helFormName = document.querySelector('.cLogin_form_signup > .markInput');
 
-        const helOtherSentBtn = document.querySelector('.cLogin_pop_form_verifiedCode_otherSentBtn');
-        const helDeleteAccountBtn = document.querySelector('.cLogin_pop_form_password_deleteAccount');
-        const helFormSubmitBtn = document.querySelector('.cLogin_pop_form_submit');
-        const helFormResetBtn = document.querySelector('.cLogin_pop_form_reset');
+        const helOtherSentBtn = document.querySelector('.cLogin_form_verifiedCode_otherSentBtn');
+        const helDeleteAccountBtn = document.querySelector('.cLogin_form_password_deleteAccount');
+        const helFormSubmitBtn = document.querySelector('.cLogin_form_submit');
+        const helFormResetBtn = document.querySelector('.cLogin_form_reset');
 
         let interactiveLoginInfo = {
             prevRequest: null,

@@ -7,7 +7,8 @@ body {
 .cStatusInfo {
   padding: 1em;
 }
-.cPaperSlip {
+
+@mixin scSectionItem() {
   padding: 1em;
 
   &_title {
@@ -21,16 +22,23 @@ body {
      margin: 1em 0.4em;
   }
   &_form {
-    %scFormChild {
+    > * {
       margin: 0.4em;
       display: block;
+
+      .markInput {
+        margin-left: 1em;
+        padding: 0.2em;
+      }
     }
+  }
+}
 
-    content: "";
+.cPaperSlip {
+  @include scSectionItem;
 
+  &_form {
     &_roomIds {
-      @extend %scFormChild;
-
       .markInput {
         width: 18em;
       }
@@ -46,70 +54,21 @@ body {
         }
       }
     }
-    &_sourceLink {
-      @extend %scFormChild;
-    }
-    &_submit {
-      @extend %scFormChild;
-    }
-    .markInput {
-      margin-left: 1em;
-      padding: 0.2em;
-    }
   }
 }
 
 .cLogin {
-  padding: 1em;
+  @include scSectionItem;
 
-  &_pop {
-    &_title {
-      margin: 0.6em 0 1em;
-
-      span {
-        font-size: 1.4em;
+  &_form {
+    &_verifiedCode {
+      &_otherSentBtn {
+        margin-left: 0.4em;
       }
     }
-    &_statusInfo {
-      margin: 1em 0.4em;
-    }
-    &_form {
-      %scFormChild {
-        margin: 0.4em;
-        display: block;
-      }
-
-      &_phone {
-        @extend %scFormChild;
-      }
-      &_verifiedCode {
-        @extend %scFormChild;
-
-        &_otherSentBtn {
-          margin-left: 0.4em;
-        }
-      }
-      &_password {
-        @extend %scFormChild;
-
-        &_deleteAccount {
-        }
-        .markSeparation {
-          margin: 0 0.4em;
-        }
-      }
-      &_signup {
-        @extend %scFormChild;
-      }
-      &_submit {
-        @extend %scFormChild;
-      }
-      &_reset {
-        @extend %scFormChild;
-      }
-      .markInput {
-        margin-left: 1em;
-        padding: 0.2em;
+    &_password {
+      .markSeparation {
+        margin: 0 0.4em;
       }
     }
   }
