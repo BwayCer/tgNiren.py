@@ -34,6 +34,10 @@ body {
   }
 }
 
+.cGetParticipants {
+  @include scSectionItem;
+}
+
 .cPaperSlip {
   @include scSectionItem;
 

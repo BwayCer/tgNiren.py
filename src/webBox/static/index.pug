@@ -14,6 +14,19 @@ html
   body
     section.cStatusInfo
       .cStatusInfo_niUsers
+    section.cGetParticipants
+      .cGetParticipants_title
+        span 群組參與者清單
+      .cGetParticipants_status
+      form.cGetParticipants_form
+        .cGetParticipants_form_roomId
+          span 群組 ID：
+          input.markInput(
+            type="text"
+            placeholder="群組 ID"
+          )
+        button.cGetParticipants_form_submit
+          span 送出
     section.cPaperSlip
       .cPaperSlip_title
         span 廣告炸群

@@ -296,6 +296,64 @@
     })();
 
     (_ => {
+        const helPaperSlipStatus = document.querySelector('.cGetParticipants_status');
+        const helFormRoomId = document.querySelector('.cGetParticipants_form_roomId > .markInput');
+
+        const helFormSubmitBtn = document.querySelector('.cGetParticipants_form_submit');
+
+        wsMethodBox['adTool.getParticipants'] = function (receive) {
+            console.log('adTool', receive)
+
+            if ('error' in receive) {
+                console.error(receive.error);
+                helPaperSlipStatus.innerText = receive.error.message;
+                return;
+            }
+
+            if (receive.code < 0) {
+                console.error('adTool.paperSlip', receive);
+            }
+            helPaperSlipStatus.innerText = receive.message;
+
+            if (receive.code === 1 && receive.participantIds.length > 0) {
+                let url = '';
+                try {
+                    let csvContent = `${receive.participantIds.join(',\n')}`;
+                    url = window.URL.createObjectURL(
+                        new Blob([csvContent], {type: 'text/plain'})
+                    );
+
+                    let downloadLink = document.createElement('a');
+                    downloadLink.href = url;
+                    downloadLink.download = 'participantUserNames.csv';
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                } finally {
+                    if (url !== '') {
+                        window.URL.revokeObjectURL(url);
+                    }
+                }
+            }
+        };
+        let _regexWord = /\w/;
+        helFormSubmitBtn.addEventListener('click', async function (evt) {
+            evt.preventDefault();
+            let roomIdTxt = helFormRoomId.value;
+            if (!_regexWord.test(roomIdTxt)) {
+                alert('請填寫群組 ID');
+                return;
+            }
+            ws.send(JSON.stringify([{
+                type: 'adTool.getParticipants',
+                prop: {
+                    groupPeer: roomIdTxt,
+                },
+            }]));
+        });
+    })();
+
+    (_ => {
         const helPaperSlipStatus = document.querySelector('.cPaperSlip_status');
         const helFormRoomIds = document.querySelector('.cPaperSlip_form_roomIds > .markInput');
         const helFormSourceLink = document.querySelector('.cPaperSlip_form_sourceLink > .markInput');

@@ -6,6 +6,27 @@ body {
   padding: 1em;
 }
 
+.cGetParticipants {
+  padding: 1em;
+}
+.cGetParticipants_title {
+  margin: 0.6em 0 1em;
+}
+.cGetParticipants_title span {
+  font-size: 1.4em;
+}
+.cGetParticipants_status {
+  margin: 1em 0.4em;
+}
+.cGetParticipants_form > * {
+  margin: 0.4em;
+  display: block;
+}
+.cGetParticipants_form > * .markInput {
+  margin-left: 1em;
+  padding: 0.2em;
+}
+
 .cPaperSlip {
   padding: 1em;
 }
