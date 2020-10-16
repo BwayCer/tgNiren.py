@@ -464,9 +464,15 @@ class TgBaseTool(_TgNiUsers):
         # TODO 檢查是否已經入群
         # 透過 `functions.messages.GetDialogsRequest` 請求來達成 ?
         # 但即便已經入群 `functions.channels.JoinChannelRequest` 請求也能成功執行
-        return client(telethon.functions.channels.JoinChannelRequest(
-            channel = groupPeer
-        ))
+        realUserName, isPrivate = telethon.utils.parse_username(groupPeer)
+        if isPrivate:
+            return client(
+                telethon.functions.messages.ImportChatInviteRequest(realUserName)
+            )
+        else:
+            return client(telethon.functions.channels.JoinChannelRequest(
+                channel = groupPeer
+            ))
 
     def leaveGroup(self,
             client: TelegramClient,
