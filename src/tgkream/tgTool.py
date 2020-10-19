@@ -249,15 +249,18 @@ class _TgNiUsers():
 
             if chanDataNiUsers.lockPhone(phoneNumber):
                 client = await self._login(phoneNumber)
-                if client != None:
+                if client == None:
+                    chanDataNiUsers.unlockPhones(phoneNumber)
+                else:
                     pickPhones.append(phoneNumber)
                     pickClients.append(client)
                     if len(pickClients) == clientCount:
                         return pickClients
 
-        chanDataNiUsers.unlockPhones(*pickPhones)
-        for client in pickClients:
-            await client.disconnect()
+        for idx in range(0, len(pickClients)):
+            await pickClients[idx].disconnect()
+            chanDataNiUsers.unlockPhones(pickPhones[idx])
+
         return None
 
     async def _init_register(self, clientList: list) -> None:
