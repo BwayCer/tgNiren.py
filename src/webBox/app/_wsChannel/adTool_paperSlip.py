@@ -75,11 +75,8 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
         latestStatus = '炸群進度： 初始化...'
         novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
         await _paperSlipAction_send(pageId, 1, latestStatus)
-        tgTool = TgDefaultInit(
-            TgBaseTool,
-            clientCount = usedClientCount,
-            papaPhone = novice.py_env['papaPhoneNumber']
-        )
+
+        tgTool = tgToolUtils.getTgTool(usedClientCount)
         await tgTool.init()
     except Exception as err:
         innerSession['runing'] = False

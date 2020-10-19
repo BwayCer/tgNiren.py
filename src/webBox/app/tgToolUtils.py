@@ -6,7 +6,16 @@ import utils.novice as novice
 from tgkream.tgTool import TgDefaultInit, TgBaseTool
 
 
-__all__ = ['getNiUsersStatusInfo']
+__all__ = ['getTgTool', 'getNiUsersStatusInfo']
+
+
+def getTgTool(clientCount: int = 0) -> TgBaseTool:
+    tgTool = TgDefaultInit(
+        TgBaseTool,
+        clientCount = clientCount if clientCount > 0 else 3,
+        papaPhone = novice.py_env['papaPhoneNumber']
+    )
+    return tgTool
 
 
 _getNiUsersStatusInfo_task = None

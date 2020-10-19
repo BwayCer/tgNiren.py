@@ -47,11 +47,7 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
         '(runId: {}) {}'.format(runId, 'adTool.getParticipants 初始化...')
     )
     try:
-        tgTool = TgDefaultInit(
-            TgBaseTool,
-            clientCount = 1,
-            papaPhone = novice.py_env['papaPhoneNumber']
-        )
+        tgTool = tgToolUtils.getTgTool(1)
         await tgTool.init()
     except Exception as err:
         errTypeName = err.__class__.__name__
