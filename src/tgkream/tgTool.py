@@ -199,69 +199,66 @@ class _TgNiUsers():
     async def init(self) -> None:
         clientCount = self.clientCount
         chanDataNiUsers = self.chanDataNiUsers
+        usablePhones = chanDataNiUsers.getUsablePhones()
+        usablePhonesLength = len(usablePhones)
+        niUsers = chanDataNiUsers.chanData.data['niUsers']
+        bandPhones = niUsers['bandList']
+        lockPhones = niUsers['lockList']
 
         # 3 * 3 sec ~= 9 sec
-        idxLoop = -1
+        idxLoop = 0
         while True:
             idxLoop += 1
             print('init-{}'.format(idxLoop))
-            if idxLoop >= 3:
+
+            if idxLoop > 3:
                 raise errors.PickPhoneMoreTimes(errors.errMsg.PickPhoneMoreTimes)
 
-            if idxLoop % 3 == 0:
-                usablePhones = chanDataNiUsers.getUsablePhones()
-
-            niUsers = chanDataNiUsers.chanData.data['niUsers']
-            bands = niUsers['bandList']
-            locks = niUsers['lockList']
-
-            if len(usablePhones) - len(bands) - len(locks) < clientCount:
+            if usablePhonesLength - len(bandPhones) - len(lockPhones) < clientCount:
                 await asyncio.sleep(3)
+                usablePhones = chanDataNiUsers.getUsablePhones()
+                usablePhonesLength = len(usablePhones)
                 continue
 
-            pickClients = await self._init_loginAll(usablePhones, bands, locks, clientCount)
-            if pickClients == None:
-                await asyncio.sleep(1)
-                continue
+            isSuccessPick = False
+            tobePickedLength = clientCount
+            pickPhones = []
+            pickClients = []
 
-            await self._init_register(pickClients)
-            break
+            # 避免頻繁使用同一帳號
+            indexStart = random.randrange(0, usablePhonesLength)
+            for idx in range(indexStart, usablePhonesLength + indexStart):
+                phoneNumber = usablePhones[idx % usablePhonesLength]
 
-    async def _init_loginAll(self,
-            usablePhones: list,
-            bandPhones: list,
-            lockPhones: list,
-            clientCount: int) -> typing.Union[None, typing.List[TelegramClient]]:
-        chanDataNiUsers = self.chanDataNiUsers
+                if usablePhonesLength - len(bandPhones) - len(lockPhones) \
+                        < tobePickedLength:
+                    break
 
-        pickPhones = []
-        pickClients = []
+                if novice.indexOf(bandPhones, phoneNumber) != -1 \
+                        or novice.indexOf(lockPhones, phoneNumber) != -1:
+                    continue
 
-        usablePhonesLength = len(usablePhones)
-        # 避免頻繁使用同一帳號
-        indexStart = random.randrange(0, usablePhonesLength)
-        for idx in range(indexStart, usablePhonesLength + indexStart):
-            phoneNumber = usablePhones[idx % usablePhonesLength]
+                if chanDataNiUsers.lockPhone(phoneNumber):
+                    client = await self._login(phoneNumber)
+                    if client == None:
+                        chanDataNiUsers.unlockPhones(phoneNumber)
+                    else:
+                        tobePickedLength -= 1
+                        pickPhones.append(phoneNumber)
+                        pickClients.append(client)
+                        if tobePickedLength == 0:
+                            isSuccessPick = True
+                            break
 
-            if novice.indexOf(bandPhones, phoneNumber) != -1 \
-                    or novice.indexOf(lockPhones, phoneNumber) != -1:
-                continue
+            if isSuccessPick:
+                await self._init_register(pickClients)
+                break
 
-            if chanDataNiUsers.lockPhone(phoneNumber):
-                client = await self._login(phoneNumber)
-                if client == None:
-                    chanDataNiUsers.unlockPhones(phoneNumber)
-                else:
-                    pickPhones.append(phoneNumber)
-                    pickClients.append(client)
-                    if len(pickClients) == clientCount:
-                        return pickClients
+            for idx in range(0, len(pickClients)):
+                await pickClients[idx].disconnect()
+                chanDataNiUsers.unlockPhones(pickPhones[idx])
 
-        for idx in range(0, len(pickClients)):
-            await pickClients[idx].disconnect()
-            chanDataNiUsers.unlockPhones(pickPhones[idx])
-
-        return None
+            await asyncio.sleep(1)
 
     async def _init_register(self, clientList: list) -> None:
         for client in clientList:
