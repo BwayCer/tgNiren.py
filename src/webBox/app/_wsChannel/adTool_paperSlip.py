@@ -242,8 +242,8 @@ async def _paperSlipAction_send(
     if ynError:
         errInfo = novice.sysExceptionInfo()
         errMsg = novice.sysTracebackException()
-        payload['message'] += '\n{}'.format(errMsg)
-        payload['error'] = {
+        payload['message'] += '\n' + errMsg
+        payload['catchError'] = {
             'name': errInfo['name'],
             'message': errInfo['message'],
             'stackList': errInfo['stackList'],

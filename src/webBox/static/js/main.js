@@ -404,7 +404,14 @@
         wsMethodBox['adTool.paperSlip']
             = wsMethodBox['adTool.paperSlipAction']
             = function (receive) {
-                console.log('adTool.paperSlip', receive);
+                console.log('adTool', receive)
+
+                if ('error' in receive) {
+                    console.error(receive.error);
+                    helPaperSlipStatus.innerText = receive.error.message;
+                    return;
+                }
+
                 if (receive.code < 0) {
                     console.error('adTool.paperSlip', receive);
                 }
