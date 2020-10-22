@@ -4,7 +4,7 @@
 import typing
 import asyncio
 import utils.novice as novice
-from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
+from tgkream.tgTool import knownError, telethon, TgDefaultInit, TgBaseTool
 
 
 def run(args: list, _dirpy: str, _dirname: str):
@@ -66,8 +66,15 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
                 bandNiUserList.append(myId)
 
                 errTypeName = err.__class__.__name__
+                errMsg = ''
+
+                if knownError.has('joinGroupMethod', err):
+                    errMsg = knownError.getMsg('joinGroupMethod', err)
+                else:
+                    errMsg = err
+
                 print('{} Error: {} (caused by {})'.format(
-                    errTypeName, err, 'tgTool.joinGroup()'
+                    errTypeName, errMsg, 'tgTool.joinGroup()'
                 ))
 
                 continue
@@ -107,8 +114,19 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             continue
         except Exception as err:
             errTypeName = err.__class__.__name__
+            errMsg = ''
+
+            # TODO
+            # if novice.indexOf(userBlockedError, errTypeName) != -1:
+                # tgTool.chanData.pushGuy(user, err)
+
+            if knownError.has('InviteToChannelRequest', err):
+                errMsg = knownError.getMsg('InviteToChannelRequest', err)
+            else:
+                errMsg = err
+
             print('{} Error: {} (caused by {})'.format(
-                errTypeName, err, 'client(channels.InviteToChannelRequest)'
+                errTypeName, errMsg, 'client(channels.InviteToChannelRequest)'
             ))
 
         tuckUserIdx += 1

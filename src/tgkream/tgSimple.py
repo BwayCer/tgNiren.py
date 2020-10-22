@@ -14,10 +14,15 @@ import utils.novice as novice
 from tgkream.utils import TgTypeing, TgSession, TgDefaultInit
 
 
-__all__ = ['errors', 'telethon', 'TgTypeing', 'TgDefaultInit', 'TgSimple']
+__all__ = [
+    'errors', 'knownError',
+    'telethon', 'TgTypeing', 'TgDefaultInit', 'TgSimple'
+]
 
 
 TelegramClient = telethon.TelegramClient
+
+knownError = errors.knownError
 
 
 class TgSimple(TgSession):
