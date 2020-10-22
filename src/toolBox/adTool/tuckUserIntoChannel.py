@@ -32,6 +32,10 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         count = info['count']
 
         if utils.novice.indexOf(bandNiUserList, myId) != -1:
+            if len(bandNiUserList) == usableClientCount:
+                errMsg = '[tuckUserIntoChannel]: 彷用戶們已盡力'
+                logNeedle.push(errMsg)
+                raise Exception(errMsg)
             continue
 
         print('->', myId, user.first_name, user.last_name, user.username, user.id)
@@ -75,11 +79,6 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             tgTool.chanData.pushGuy(user, err)
         except Exception as err:
             raise err
-
-        if len(bandNiUserList) == usableClientCount:
-            errMsg = '[tuckUserIntoChannel]: 彷用戶們已盡力'
-            logNeedle.push(errMsg)
-            raise Exception(errMsg)
 
 async def _bestSingleCount(tgTool: TgBaseTool, groupPeer: str, maxCount: str) -> int:
     client = tgTool.pickClient()['client']

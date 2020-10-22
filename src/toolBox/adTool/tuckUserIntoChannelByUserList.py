@@ -37,12 +37,11 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         myId = clientInfo['id']
         client = clientInfo['client']
 
-        if len(bandNiUserList) == usableClientCount:
-            errMsg = '[tuckUserIntoChannel]: 彷用戶們已盡力'
-            logNeedle.push(errMsg)
-            raise Exception(errMsg)
-
         if novice.indexOf(bandNiUserList, myId) != -1:
+            if len(bandNiUserList) == usableClientCount:
+                errMsg = '[tuckUserIntoChannel]: 彷用戶們已盡力'
+                logNeedle.push(errMsg)
+                raise Exception(errMsg)
             continue
 
         readableTuckUserIdx = tuckUserIdx + 1
