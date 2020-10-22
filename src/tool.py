@@ -9,6 +9,7 @@ _pyTool = {
     'adTool.sendAdPhoto': 'adTool/sendAdPhoto',
     'adTool.getParticipants': 'adTool/getParticipants',
     'adTool.tuckUserIntoChannel': 'adTool/tuckUserIntoChannel',
+    'adTool.tuckUserIntoChannelByUserList': 'adTool/tuckUserIntoChannelByUserList',
     'tgPing.interactiveLogin.simple': 'tgPing/simple-interactiveLogin',
     'tgPing.sendForward.simple': 'tgPing/simple-sendForward',
     'tgPing.highSendMessage.simple': 'tgPing/simple-highSendMessage',
