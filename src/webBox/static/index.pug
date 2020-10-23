@@ -27,6 +27,31 @@ html
           )
         button.cGetParticipants_form_submit
           span 送出
+    section.cTuckUser
+      .cTuckUser_title
+        span 拉人入群
+      .cTuckUser_status
+      form.cTuckUser_form
+        .cTuckUser_form_userIds
+          span 用戶 ID：
+          input.markInput(
+            type="text"
+            placeholder="用戶 ID (以逗點分隔)"
+          )
+          .cTuckUser_form_userIds_csvUpload
+            | （CSV 批量匯入：
+            input.markInput(
+              type="file"
+            )
+            | ）
+        .cTuckUser_form_ourGroup
+          span 群組 ID：
+          input.markInput(
+            type="text"
+            placeholder="群組 ID"
+          )
+        button.cTuckUser_form_submit
+          span 送出
     section.cPaperSlip
       .cPaperSlip_title
         span 廣告炸群

@@ -27,6 +27,39 @@ body {
   padding: 0.2em;
 }
 
+.cTuckUser {
+  padding: 1em;
+}
+.cTuckUser_title {
+  margin: 0.6em 0 1em;
+}
+.cTuckUser_title span {
+  font-size: 1.4em;
+}
+.cTuckUser_status {
+  margin: 1em 0.4em;
+}
+.cTuckUser_form > * {
+  margin: 0.4em;
+  display: block;
+}
+.cTuckUser_form > * .markInput {
+  margin-left: 1em;
+  padding: 0.2em;
+}
+.cTuckUser_form_userIds .markInput {
+  width: 18em;
+}
+.cTuckUser_form_userIds_csvUpload {
+  display: block;
+}
+.cTuckUser_form_userIds_csvUpload span {
+  font-size: 0.6em;
+}
+.cTuckUser_form_userIds_csvUpload .markInput {
+  vertical-align: middle;
+}
+
 .cPaperSlip {
   padding: 1em;
 }

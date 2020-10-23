@@ -17,6 +17,12 @@ class console():
         '_illegalInvocation': 'Illegal invocation.',
         '_notExpectedType': '"{}" is not of the expected type.',
         '_restrictedType': '"{}" must be a `{}` type.',
+        # https://docs.telethon.dev/en/latest/concepts/errors.html
+        'commonErrors_floodWait': 'Too many requests and wait {} seconds.',
+        'commonErrors_FloodWaitError':
+            'The +{} phone was blocked until {} seconds later because of "FloodWaitError".',
+        'commonErrors_PeerFloodError':
+            'The +{} phone was blocked until 12 hours later because of "PeerFloodError".',
     }
 
     def logMsg(runIdCode: str, msg: str) -> str:

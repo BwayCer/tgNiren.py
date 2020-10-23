@@ -38,6 +38,29 @@ body {
   @include scSectionItem;
 }
 
+.cTuckUser {
+  @include scSectionItem;
+
+  &_form {
+    &_userIds {
+      .markInput {
+        width: 18em;
+      }
+
+      &_csvUpload {
+        display: block;
+
+        span {
+          font-size: 0.6em;
+        }
+        .markInput {
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+}
+
 .cPaperSlip {
   @include scSectionItem;
 

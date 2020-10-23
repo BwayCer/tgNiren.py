@@ -353,32 +353,101 @@
         });
     })();
 
+    function _csvParse(csvData) {
+        let currMatch, currMatch_3;
+        let fieldRegEx = /(?:\s*"((?:""|[^"])*)"\s*|\s*((?:""|[^",\r\n])*(?:""|[^"\s,\r\n]))?\s*)(,|[\r\n]+|$)/g
+        let rows = [];
+        let row = [];
+
+        for ( ; currMatch = fieldRegEx.exec(csvData) ; ) {
+            row.push((currMatch[1] || '') + (currMatch[2] || ''));
+            currMatch_3 = currMatch[3];
+
+            if (currMatch_3 !== ',') {
+                rows.push(row);
+                row = [];
+            }
+            if (currMatch_3 === '') {
+                break;
+            }
+        }
+
+        return rows;
+    }
+
+    (_ => {
+        const helTuckUserStatus = document.querySelector('.cTuckUser_status');
+        const helFormUserIds = document.querySelector('.cTuckUser_form_userIds > .markInput');
+        const helFormOurGroup = document.querySelector('.cTuckUser_form_ourGroup > .markInput');
+
+        document.querySelector('.cTuckUser_form_userIds_csvUpload > .markInput')
+            .addEventListener('change', async function (evt) {
+                const file = this.files[0];
+                if (file === null || file.name.substr(-4) !== '.csv') {
+                    alert('請提供 csv 文件');
+                    return;
+                }
+                let roomIds = [];
+                _csvParse(await file.text()).forEach(function (lineList) {
+                    lineList.forEach(function (val) {
+                        if (val !== '') {
+                            roomIds.push(val);
+                        }
+                    });
+                });
+                helFormUserIds.value +=
+                    (helFormUserIds.value === '' ? '' : ',')
+                    + roomIds.join(',')
+                ;
+            })
+        ;
+
+        wsMethodBox['adTool.tuckUser']
+            = wsMethodBox['adTool.tuckUserAction']
+            = function (receive) {
+                if ('error' in receive) {
+                    console.error(receive.error);
+                    helTuckUserStatus.innerText = receive.error.message;
+                    return;
+                }
+
+                if (receive.code < 0) {
+                    console.error('adTool.tuckUser', receive);
+                }
+                helTuckUserStatus.innerText = receive.message;
+            }
+        ;
+        let _regexWord = /\w/;
+        document.querySelector('.cTuckUser_form_submit')
+            .addEventListener('click', async function (evt) {
+                evt.preventDefault();
+
+                let userIdsTxt = helFormUserIds.value;
+                if (!_regexWord.test(userIdsTxt)) {
+                    alert('請填寫用戶 ID');
+                    return;
+                }
+                let toGroupTxt = helFormOurGroup.value;
+                if (!_regexWord.test(toGroupTxt)) {
+                    alert('請填寫群組 ID');
+                    return;
+                }
+                ws.send(JSON.stringify([{
+                    type: 'adTool.tuckUser',
+                    prop: {
+                        userPeerList: userIdsTxt.split(','),
+                        toGroupPeer: toGroupTxt,
+                    },
+                }]));
+            })
+        ;
+    })();
+
     (_ => {
         const helPaperSlipStatus = document.querySelector('.cPaperSlip_status');
         const helFormRoomIds = document.querySelector('.cPaperSlip_form_roomIds > .markInput');
         const helFormSourceLink = document.querySelector('.cPaperSlip_form_sourceLink > .markInput');
 
-        function _csvParse(csvData) {
-            let currMatch, currMatch_3;
-            let fieldRegEx = /(?:\s*"((?:""|[^"])*)"\s*|\s*((?:""|[^",\r\n])*(?:""|[^"\s,\r\n]))?\s*)(,|[\r\n]+|$)/g
-            let rows = [];
-            let row = [];
-
-            for ( ; currMatch = fieldRegEx.exec(csvData) ; ) {
-                row.push((currMatch[1] || '') + (currMatch[2] || ''));
-                currMatch_3 = currMatch[3];
-
-                if (currMatch_3 !== ',') {
-                    rows.push(row);
-                    row = [];
-                }
-                if (currMatch_3 === '') {
-                    break;
-                }
-            }
-
-            return rows;
-        }
         document.querySelector('.cPaperSlip_form_roomIds_csvUpload > .markInput')
             .addEventListener('change', async function (evt) {
                 const file = this.files[0];
