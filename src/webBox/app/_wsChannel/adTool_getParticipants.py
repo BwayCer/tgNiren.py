@@ -7,7 +7,7 @@ import random
 import utils.novice as novice
 import webBox.serverMix as serverMix
 from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
-import webBox.app.tgToolUtils as tgToolUtils
+import webBox.app.utils as appUtils
 
 
 __all__ = ['getParticipants']
@@ -47,7 +47,7 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
         '(runId: {}) {}'.format(runId, 'adTool.getParticipants 初始化...')
     )
     try:
-        tgTool = tgToolUtils.getTgTool(1)
+        tgTool = appUtils.getTgTool(1)
         await tgTool.init()
     except Exception as err:
         errTypeName = err.__class__.__name__

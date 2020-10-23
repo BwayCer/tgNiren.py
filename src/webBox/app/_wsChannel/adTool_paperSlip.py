@@ -8,7 +8,7 @@ import json
 import utils.novice as novice
 import webBox.serverMix as serverMix
 from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
-import webBox.app.tgToolUtils as tgToolUtils
+import webBox.app.utils as appUtils
 
 
 __all__ = ['paperSlip']
@@ -57,7 +57,7 @@ async def paperSlip(pageId: str, prop: typing.Any = None) -> dict:
     }
 
 async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
-    niUsersStatusInfo = await tgToolUtils.getNiUsersStatusInfo()
+    niUsersStatusInfo = await appUtils.getNiUsersStatusInfo()
     usableNiUsersCount = niUsersStatusInfo['usableCount']
     if usableNiUsersCount < 3:
         await _paperSlipAction_send(pageId, -1, '工具目前無法使用。')
@@ -76,7 +76,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
         novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
         await _paperSlipAction_send(pageId, 1, latestStatus)
 
-        tgTool = tgToolUtils.getTgTool(usedClientCount)
+        tgTool = appUtils.getTgTool(usedClientCount)
         await tgTool.init()
     except Exception as err:
         innerSession['runing'] = False

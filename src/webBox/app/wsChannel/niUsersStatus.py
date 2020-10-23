@@ -6,7 +6,7 @@ import asyncio
 import json
 import utils.novice as novice
 import webBox.serverMix as serverMix
-import webBox.app.tgToolUtils as tgToolUtils
+import webBox.app.utils as appUtils
 
 
 def subscribe(pageId: str, prop: typing.Any = None) -> dict:
@@ -27,7 +27,7 @@ _latestStatus_prevStatus = {'allCount': 0, 'usableCount': 0}
 
 async def _latestStatus():
     while True:
-        niUsersStatusInfo = await tgToolUtils.getNiUsersStatusInfo()
+        niUsersStatusInfo = await appUtils.getNiUsersStatusInfo()
         allCount = niUsersStatusInfo['allCount']
         usableCount = niUsersStatusInfo['usableCount']
         isChange = _latestStatus_prevStatus['allCount'] != allCount \
