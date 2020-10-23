@@ -1,12 +1,95 @@
 #!/usr/bin/env python3
 
 
+import typing
 import asyncio
 import utils.novice as novice
 from tgkream.tgTool import TgDefaultInit, TgBaseTool
 
 
-__all__ = ['getTgTool', 'getNiUsersStatusInfo']
+__all__ = ['console', 'getTgTool', 'getNiUsersStatusInfo']
+
+
+class console():
+    baseMsg = {
+        '_undefined': 'Unexpected log message.',
+        '_undefinedError': 'Unexpected error message.',
+        '_illegalInvocation': 'Illegal invocation.',
+        '_notExpectedType': '"{}" is not of the expected type.',
+        '_restrictedType': '"{}" must be a `{}` type.',
+    }
+
+    def logMsg(runIdCode: str, msg: str) -> str:
+        novice.logNeedle.push('(runId: {}) log {}'.format(runIdCode, msg))
+        return msg
+
+    def errorMsg(runIdCode: str, msg: str) -> str:
+        novice.logNeedle.push('(runId: {}) error {}'.format(runIdCode, msg))
+        return msg
+
+    def catchErrorMsg(runIdCode: str, methodName: str, errMsg: str) -> str:
+        novice.logNeedle.push(
+            '(runId: {}) from {} Failed {}'.format(runIdCode, methodName, errMsg)
+        )
+        return errMsg
+
+    def _getMsg(msgTypeInfos: dict, typeName: str, defaultMsg: str, *args) -> str:
+        if typeName in msgTypeInfos:
+            msg = msgTypeInfos[typeName]
+            if len(args) > 0:
+                msg = msg.format(*args)
+        else:
+            msg = '{} (type: {})'.format(defaultMsg, typeName)
+        return msg
+
+    def getMsg(msgTypeInfos: dict, typeName: str, *args) -> str:
+        return console._getMsg(
+            msgTypeInfos, typeName,
+            console.baseMsg['_undefined'],
+            *args
+        )
+
+    def getErrorMsg(msgTypeInfos: dict, typeName: str, *args) -> str:
+        return console._getMsg(
+            msgTypeInfos, typeName,
+            console.baseMsg['_undefinedError'],
+            *args
+        )
+
+    def log(runIdCode: str, msgTypeInfos: dict, typeName: str, *args) -> str:
+        msg = console._getMsg(
+            msgTypeInfos, typeName,
+            console.baseMsg['_undefined'],
+            *args
+        )
+        novice.logNeedle.push('(runId: {}) log {}'.format(runIdCode, msg))
+        return msg
+
+    def error(runIdCode: str, msgTypeInfos: dict, typeName: str, *args) -> str:
+        msg = console._getMsg(
+            msgTypeInfos, typeName,
+            console.baseMsg['_undefinedError'],
+            *args
+        )
+        novice.logNeedle.push('(runId: {}) error {}'.format(runIdCode, msg))
+        return msg
+
+    def catchError(
+            runIdCode: str,
+            methodName: str,
+            errorTypeInfos: typing.Union[None, dict] = None,
+            typeName: str = '',
+            *args) -> str:
+        if errorTypeInfos != None and typeName in errorTypeInfos:
+            errMsg = errorTypeInfos[typeName]
+            if len(args) > 0:
+                errMsg = errMsg.format(*args)
+        else:
+            errMsg = novice.sysTracebackException()
+        novice.logNeedle.push(
+            '(runId: {}) from {} Failed {}'.format(runIdCode, methodName, errMsg)
+        )
+        return errMsg
 
 
 def getTgTool(clientCount: int = 0) -> TgBaseTool:
