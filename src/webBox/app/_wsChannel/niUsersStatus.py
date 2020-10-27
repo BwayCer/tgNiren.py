@@ -9,11 +9,12 @@ import webBox.serverMix as serverMix
 import webBox.app.utils as appUtils
 
 
-__all__ = ['subscribe']
+__all__ = ['subscribe', 'updateStatus']
 
 
 _subscriber = []
 _prevStatus = {'allCount': 0, 'usableCount': 0}
+
 
 async def subscribe(pageId: str):
     if novice.indexOf(_subscriber, pageId) == -1:
@@ -22,7 +23,21 @@ async def subscribe(pageId: str):
         if len(_subscriber) == 1:
             asyncio.create_task(_latestStatus())
 
-    await _send(pageId, _getNiUsersStatusTxt())
+    await _send(pageId, _getNiUsersStatusTxt(_prevStatus))
+
+async def updateStatus(allCount: int = 0, usableCount: int = 0):
+    if allCount + usableCount == 0:
+        return
+
+    allCount = _prevStatus['allCount'] + allCount
+    allCount = _prevStatus['allCount'] = allCount if allCount > 0 else 0
+
+    usableCount = _prevStatus['usableCount'] + usableCount
+    _prevStatus['usableCount'] = 0 if usableCount < 0 else \
+        usableCount if usableCount <= allCount else allCount
+
+    await _sendAll()
+
 
 async def _latestStatus():
     while True:
@@ -36,27 +51,13 @@ async def _latestStatus():
             _prevStatus['allCount'] = allCount
             _prevStatus['usableCount'] = usableCount
 
-        niUsersStatusTxt = _getNiUsersStatusTxt()
-        for pageId in _subscriber:
-            if serverMix.wsHouse.connectLength(pageId) == 0:
-                pageIdIdx = novice.indexOf(_subscriber, pageId)
-                if pageIdIdx != -1:
-                    del _subscriber[pageIdIdx]
-                break
-
-            if isChange:
-                await _send(pageId, niUsersStatusTxt)
+        await _sendAll()
 
         if len(_subscriber) == 0:
             break
         else:
             await asyncio.sleep(3)
 
-def _getNiUsersStatusTxt() -> str:
-    return '仿用戶可用比： {}/{}'.format(
-        _prevStatus['usableCount'],
-        _prevStatus['allCount']
-    )
 
 async def _send(pageId: str, niUsersStatusTxt: str):
     innerSession = serverMix.innerSession.get(pageId)
@@ -68,4 +69,20 @@ async def _send(pageId: str, niUsersStatusTxt: str):
             'latestStatus': innerSession['latestStatus']
         }])
     )
+
+async def _sendAll(isChange: bool = True):
+    niUsersStatusTxt = _getNiUsersStatusTxt(_prevStatus)
+    for pageId in _subscriber:
+        if serverMix.wsHouse.connectLength(pageId) == 0:
+            pageIdIdx = novice.indexOf(_subscriber, pageId)
+            if pageIdIdx != -1:
+                del _subscriber[pageIdIdx]
+            break
+
+        if isChange:
+            await _send(pageId, niUsersStatusTxt)
+
+
+def _getNiUsersStatusTxt(info: dict) -> str:
+    return '仿用戶可用比： {}/{}'.format(info['usableCount'], info['allCount'])
 

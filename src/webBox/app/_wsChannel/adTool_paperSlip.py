@@ -9,6 +9,7 @@ import utils.novice as novice
 import webBox.serverMix as serverMix
 from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
 import webBox.app.utils as appUtils
+from webBox.app._wsChannel.niUsersStatus import updateStatus as niUsersStatusUpdateStatus
 
 
 __all__ = ['paperSlip']
@@ -84,6 +85,8 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
         novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
         await _paperSlipAction_send(pageId, -1, latestStatus, ynError = True)
         return
+
+    await niUsersStatusUpdateStatus(usableCount = -1 * usedClientCount)
 
     try:
         finalPeers = _filterGuy(tgTool, forwardPeers)
@@ -193,6 +196,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
         await _paperSlipAction_send(pageId, -1, latestStatus, ynError = True)
     finally:
         innerSession['runing'] = False
+        await niUsersStatusUpdateStatus(usableCount = usedClientCount)
         await tgTool.release()
 
 # https://tl.telethon.dev/methods/channels/join_channel.html

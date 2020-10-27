@@ -9,6 +9,7 @@ import utils.novice as novice
 import webBox.serverMix as serverMix
 from tgkream.tgTool import knownError, telethon, TgDefaultInit, TgBaseTool
 import webBox.app.utils as appUtils
+from webBox.app._wsChannel.niUsersStatus import updateStatus as niUsersStatusUpdateStatus
 
 
 __all__ = ['tuckUser']
@@ -83,6 +84,8 @@ async def _tuckUserAction(pageId: str, innerSession: dict, data: dict):
                 isError = True
             )
             return
+
+        await niUsersStatusUpdateStatus(usableCount = -1 * usedClientCount)
 
         finalPeers = _filterGuy(tgTool, userPeers)
         finalPeersLength = len(finalPeers)
@@ -259,6 +262,7 @@ async def _tuckUserAction(pageId: str, innerSession: dict, data: dict):
         innerSession['runing'] = False
         if 'tgTool' in locals():
             await tgTool.release()
+            await niUsersStatusUpdateStatus(usableCount = usedClientCount)
 
 
 _interactiveMessage = {

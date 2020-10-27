@@ -9,6 +9,7 @@ import telethon.sync as telethon
 import utils.novice as novice
 import webBox.serverMix as serverMix
 from tgkream.utils import TgSession
+from webBox.app._wsChannel.niUsersStatus import updateStatus as niUsersStatusUpdateStatus
 
 
 __all__ = ['login', 'sendCode', 'verifiedCode', 'verifiedPassword', 'deleteAccount', 'signup']
@@ -58,6 +59,7 @@ async def login(pageId: str, prop: typing.Any = None) -> dict:
         errInfo, client = await _checkConnectClient(runIdCode, '', phoneNumber)
         if client != None and await client.is_user_authorized():
             await _disconnectClient(runIdCode, info, client)
+            await niUsersStatusUpdateStatus(allCount = 1, usableCount = 1)
             return {
                 'code': 4,
                 'messageType': 'loggedin',
@@ -243,6 +245,7 @@ async def verifiedCode(pageId: str, prop: typing.Any = None) -> dict:
     _mvSessionPath(runIdCode, info['phoneNumber'], fromAddPrifix = 'tmpLogin')
     await _disconnectClient(runIdCode, info, client)
 
+    await niUsersStatusUpdateStatus(allCount = 1, usableCount = 1)
     return {
         'code': 4,
         'messageType': 'successLogin',
@@ -326,6 +329,7 @@ async def verifiedPassword(pageId: str, prop: typing.Any = None) -> dict:
     _mvSessionPath(runIdCode, info['phoneNumber'], fromAddPrifix = 'tmpLogin')
     await _disconnectClient(runIdCode, info, client)
 
+    await niUsersStatusUpdateStatus(allCount = 1, usableCount = 1)
     return {
         'code': 4,
         'messageType': 'successLogin',
@@ -494,6 +498,7 @@ async def signup(pageId: str, prop: typing.Any = None) -> dict:
     _mvSessionPath(runIdCode, info['phoneNumber'], fromAddPrifix = 'tmpLogin')
     await _disconnectClient(runIdCode, info, client)
 
+    await niUsersStatusUpdateStatus(allCount = 1, usableCount = 1)
     return {
         'code': 4,
         'messageType': 'successSingup',

@@ -8,6 +8,7 @@ import utils.novice as novice
 import webBox.serverMix as serverMix
 from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
 import webBox.app.utils as appUtils
+from webBox.app._wsChannel.niUsersStatus import updateStatus as niUsersStatusUpdateStatus
 
 
 __all__ = ['getParticipants']
@@ -57,6 +58,8 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
             'message': _getMessage.catchError(runId, 'init TgTool', {}, errTypeName),
         }
 
+    await niUsersStatusUpdateStatus(usableCount = -1)
+
     clientInfo = tgTool.pickClient()
     myId = clientInfo['id']
     client = clientInfo['client']
@@ -74,6 +77,7 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
             pass
         except Exception as err:
             await tgTool.release()
+            await niUsersStatusUpdateStatus(usableCount = 1)
 
             errTypeName = err.__class__.__name__
             return {
@@ -100,6 +104,7 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
             userIds.append(user.username)
     except Exception as err:
         await tgTool.release()
+        await niUsersStatusUpdateStatus(usableCount = 1)
 
         errTypeName = err.__class__.__name__
         return {
@@ -114,6 +119,7 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
         }
 
     await tgTool.release()
+    await niUsersStatusUpdateStatus(usableCount = 1)
 
     return {
         'code': 1,
