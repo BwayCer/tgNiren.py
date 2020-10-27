@@ -70,7 +70,7 @@
 
             helNiUsersStatus.innerText = niUsersStatus;
         };
-        ws.send(JSON.stringify([{type: 'niUsersStatus.subscribe', prop: 'latestStatus'}]));
+        ws.send(JSON.stringify([{type: 'ws.subscribe', prop: 'latestStatus'}]));
     })();
 
     (_ => {
