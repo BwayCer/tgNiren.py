@@ -122,6 +122,19 @@ async def _getNiUsersStatusInfo_handle():
     bandPhones = niUsers['bandList']
     lockPhones = niUsers['lockList']
 
+    # NOTE:
+    # 原本打算以下述程式碼來優化加快檢查時程，
+    # 但卻會因為記憶體不足而以退出代碼 137 退出程式。
+    #     async def _getNiUsersStatusInfo_runLogin(tgTool: TgBaseTool, phoneNumber: str):
+    #         client = await tgTool.login(phoneNumber)
+    #         if client != None:
+    #             await tgTool.release(phoneNumber)
+    #
+    #     runLoginTasks = []
+    #     for phoneNumber in usablePhones:
+    #         runLoginTasks.append(_getNiUsersStatusInfo_runLogin(tgTool, phoneNumber))
+    #
+    #     await asyncio.gather(*runLoginTasks)
     for phoneNumber in usablePhones:
         if novice.indexOf(bandPhones, phoneNumber) != -1 \
                 or novice.indexOf(lockPhones, phoneNumber) != -1:
@@ -131,7 +144,7 @@ async def _getNiUsersStatusInfo_handle():
         if client != None:
             await tgTool.release(phoneNumber)
 
-    allCount = len(usablePhones)
+    allCount = len(chanDataNiUsers.getUsablePhones())
     lockCount = len(bandPhones) + len(lockPhones)
     return {
         'allCount': allCount,

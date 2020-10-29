@@ -56,7 +56,7 @@ async def _latestStatus():
         if len(_subscriber) == 0:
             break
         else:
-            await asyncio.sleep(3)
+            await asyncio.sleep(60)
 
 
 async def _send(pageId: str, niUsersStatusTxt: str):
