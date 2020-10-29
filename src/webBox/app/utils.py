@@ -140,9 +140,11 @@ async def _getNiUsersStatusInfo_handle():
                 or novice.indexOf(lockPhones, phoneNumber) != -1:
             continue
 
+        novice.logNeedle.push(f'test {phoneNumber}')
         client = await tgTool.login(phoneNumber)
         if client != None:
             await tgTool.release(phoneNumber)
+        novice.logNeedle.push(f'test {phoneNumber} OK')
 
     allCount = len(chanDataNiUsers.getUsablePhones())
     lockCount = len(bandPhones) + len(lockPhones)
