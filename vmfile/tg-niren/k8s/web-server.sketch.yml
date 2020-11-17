@@ -23,7 +23,9 @@ spec:
         - containerPort: 5000
         resources:
           requests:
-            memory: 30Mi
+            memory: 100Mi
+          limits:
+            cpu: 100m
         volumeMounts:
           - name: ${envfileName}-volume
             mountPath: /app/envfile

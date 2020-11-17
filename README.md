@@ -92,5 +92,9 @@ kubectl exec -it <Pod Name> sh
 curl https://storage.googleapis.com/<Bucket Name>/env.tar.gz -o - | tar -zxv --no-same-owner -C .
 
 kubectl apply -f "./vmfile/tg-niren/k8s/tg-niren.yml"
+
+# 重新啟動服務器
+kubectl scale --replicas 0 deployment/tg-niren-deployment
+kubectl scale --replicas 1 deployment/tg-niren-deployment
 ```
 
