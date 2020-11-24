@@ -388,6 +388,7 @@
         const helPaperSlipStatus = document.querySelector('.cGetParticipants_status');
         const helGetParticipantsStatus = document.querySelector('.cGetParticipants_status');
         const helFormRoomId = document.querySelector('.cGetParticipants_form_roomId > .markInput');
+        const helFormOffsetDays = document.querySelector('.cGetParticipants_form_offsetDays > .markInput');
 
         const helFormSubmitBtn = document.querySelector('.cGetParticipants_form_submit');
 
@@ -437,10 +438,18 @@
                 alert('請填寫群組 ID');
                 return;
             }
+            let offsetDaysNum = Number(helFormOffsetDays.value);
+            if (!(offsetDaysNum > 0)) {
+                alert('請填寫過濾期間 (其值須大於 0)');
+                return;
+            }
             ws.send(JSON.stringify({wsId, fns: [{
                 randId: getRandomId(),
                 name: 'adTool.getParticipants',
-                prop: {groupPeer: roomIdTxt},
+                prop: {
+                    groupPeer: roomIdTxt,
+                    offsetDays: offsetDaysNum,
+                },
             }]}));
         });
     })();

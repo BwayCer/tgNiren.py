@@ -7,7 +7,7 @@ import random
 import asyncio
 import utils.novice as novice
 import webBox.serverMix as serverMix
-from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
+from tgkream.tgTool import knownError, telethon, TgDefaultInit, TgBaseTool
 import webBox.app.utils as appUtils
 from webBox.app._wsChannel.niUsersStatus import updateStatus as niUsersStatusUpdateStatus
 
@@ -32,6 +32,14 @@ async def getParticipants(pageId: str, wsId: str, prop: typing.Any = None) -> di
                 _getMessage.baseMsg, '_notExpectedType', 'prop.groupPeer'
             )
         }
+    if not ('offsetDays' in prop and type(prop['offsetDays']) == int):
+        return {
+            'code': -1,
+            'messageType': '_notExpectedType',
+            'message': _getMessage.logNotRecord(
+                _getMessage.baseMsg, '_notExpectedType', 'prop.offsetDays'
+            )
+        }
 
     asyncio.ensure_future(_getParticipantsAction(pageId, prop))
     return {
@@ -51,6 +59,7 @@ async def _getParticipantsAction(pageId: str, data: dict):
         return
 
     groupPeer = data['groupPeer']
+    offsetDays = data['offsetDays']
 
     # 用於打印日誌
     runId = random.randrange(1000000, 9999999)
@@ -76,12 +85,19 @@ async def _getParticipantsAction(pageId: str, data: dict):
     myId = clientInfo['id']
     client = clientInfo['client']
 
-    novice.logNeedle.push(
-        '(runId: {}) tgTool.joinGroup() {} join {}'.format(runId, myId, groupPeer)
-    )
+    groupEntity = await client.get_entity(groupPeer)
+    print(type(groupEntity), groupEntity.megagroup)
+    if type(groupEntity) != telethon.types.Channel or groupEntity.megagroup == False:
+        await _getParticipantsAction_send(pageId, {
+            'code': -1,
+            'messageType': 'Error',
+            'message': appUtils.console.logMsg(runId, f'"{groupPeer}" 非群組聊天室。'),
+        })
+        return
 
     _, isPrivate = telethon.utils.parse_username(groupPeer)
     if isPrivate:
+        appUtils.console.logMsg(runId, f'tgTool.joinGroup() {myId} join {groupPeer}')
         try:
             await tgTool.joinGroup(client, groupPeer)
         except telethon.errors.UserAlreadyParticipantError as err:
@@ -104,32 +120,35 @@ async def _getParticipantsAction(pageId: str, data: dict):
             })
             return
 
-    novice.logNeedle.push(
-        '(runId: {}) tgTool.getParticipants()'.format(runId)
-    )
+    appUtils.console.logMsg(runId, '_getActiveParticipants()')
     try:
-        _, users = await tgTool.getParticipants(client, groupPeer)
-        userIds = []
+        users = await _getActiveParticipants(client, groupPeer, offsetDays)
+        userNames = []
         for user in users:
             username = user.username
             if username == None:
                 continue
-            userIds.append(user.username)
+            userNames.append(username)
     except Exception as err:
         await tgTool.release()
         await niUsersStatusUpdateStatus(usableCount = 1)
 
         errTypeName = err.__class__.__name__
-        await _getParticipantsAction_send(pageId, {
+        payload = {
             'code': -1,
             'messageType': errTypeName,
-            'message': _getMessage.catchError(
-                runId,
-                'tgTool.getParticipants()',
-                _getParticipantsKnownErrorTypeInfo,
-                errTypeName
-            ),
-        })
+            'message': '',
+        }
+        if knownError.has('GetHistoryRequest', err):
+            payload.message = appUtils.console.catchErrorMsg(
+                runId, 'GetHistoryRequest', knownError.getMsg('GetHistoryRequest', err)
+            )
+        else:
+            payload.message = appUtils.console.catchError(
+                runId, '_getActiveParticipants()'
+            )
+
+        await _getParticipantsAction_send(pageId, payload)
         return
 
     await tgTool.release()
@@ -139,9 +158,9 @@ async def _getParticipantsAction(pageId: str, data: dict):
         'code': 1,
         'messageType': 'success',
         'message': _getMessage.log(
-            runId, _interactiveMessage, 'success', len(userIds)
+            runId, _interactiveMessage, 'success', len(userNames)
         ),
-        'participantIds': userIds,
+        'participantIds': userNames,
     })
 
 
@@ -173,6 +192,7 @@ _joinGroupKnownErrorTypeInfo = {
     # 400 USER_ALREADY_PARTICIPANT
     # 400 USER_CHANNELS_TOO_MUCH
 }
+# TODO: 之後做多功能提取名單時會有用
 _getParticipantsKnownErrorTypeInfo = {
     'ChannelInvalidError': '無效的頻道對象。',
     'ChannelPrivateError': '您無法加入私人的頻道/超級群組。另一個原因可能是您被禁止了。',
@@ -249,4 +269,96 @@ async def _getParticipantsAction_send(
         'name': 'adTool.getParticipantsAction',
         'result': payload,
     })
+
+async def _getActiveParticipants(
+        client: telethon.TelegramClient,
+        groupPeer: str,
+        offsetDays: float = 1,
+        amount: int = 0) -> typing.List[telethon.types.User]:
+    if offsetDays < 1:
+        raise Exception('時間偏移量須為大於 1 的正數。')
+    if amount < 0:
+        raise Exception('取得用戶總量須為正整數。')
+
+    theDt = novice.dateUtcNowOffset(days = -1 * offsetDays)
+
+    # NOTE: 關於 `GetHistoryRequest()` 方法
+    # https://core.telegram.org/method/messages.getHistory
+    # https://tl.telethon.dev/methods/messages/get_history.html
+    # 1. 當對象為用戶時，沒有訊息?! (2020.11.23 紀錄)
+    # 關於參數值：
+    #   1. `offset_id`, `add_offset` 用於選取在特定訊息前或後的訊息，不使用則傳入 `0`。
+    #   2. `offset_date`, `max_id`, `min_id` 用於選取在特定範圍內的訊息
+    #      注意！ 感覺是先使用 `offset_date` 和 `limit` 先選定範圍，
+    #      再篩選符合的 `max_id`, `min_id` 的項目，
+    #      所以當 `offset_date` 不變的情況下，取得訊息的數量只會越來越少。
+    #   3. `offset_date` 若傳入 `0|None`，則預設為當前時間。
+    #   4. Telegram 時間為 UTC 時間。
+    # 關於回傳值：
+    #   https://core.telegram.org/constructor/messages.channelMessages
+    #   1. `count` 為該聊天室紀錄於服務端的總訊息比數。
+    #      (但可能不完全紀錄於服務端 ?! (官方說的))
+    #   2. 回傳的訊息是依時間倒序排序的。
+    #   3. `chats`, `users` 中包含 `messages` 所提到的對象 (ex: 轉傳的訊息對象也在裡面)
+    #   4. `limit` 最多為 100 則。 (2020.11.23 紀錄)
+
+    result = await client(telethon.functions.messages.GetHistoryRequest(
+        peer = groupPeer,
+        offset_id = 0,
+        offset_date = theDt,
+        add_offset = 0,
+        limit = 1,
+        max_id = 0,
+        min_id = 0,
+        hash = 0
+    ))
+    oldMsgId = result.messages[0].id if len(result.messages) > 0 else 1
+
+    isBleak = False
+    currDate = None
+    currMinMsgId = 0
+    userList = []
+    activeUserList = []
+    while True:
+        result = await client(telethon.functions.messages.GetHistoryRequest(
+            peer = groupPeer,
+            offset_id = 0,
+            offset_date = currDate,
+            add_offset = 0,
+            limit = 100,
+            max_id = currMinMsgId,
+            min_id = oldMsgId,
+            hash = 0
+        ))
+        print(f'pts: {result.pts}, count: {result.count}, messages: {len(result.messages)}, chats: {len(result.chats)}, users: {len(result.users)}')
+
+        messagesLength = len(result.messages)
+        if messagesLength == 0:
+            break
+        print(f'  {result.messages[0].id}({result.messages[0].date}) ~ {result.messages[messagesLength - 1].id}({result.messages[messagesLength - 1].date})')
+
+        for user in result.users:
+            # 排除 自己, 已刪除帳號, 機器人
+            if user.is_self or user.deleted or user.bot:
+                continue
+
+            # 過濾已抓取的
+            if user.id in userList:
+                continue
+
+            userList.append(user.id)
+            activeUserList.append(user)
+
+            if amount != 0 and len(activeUserList) >= amount:
+                isBleak = True
+                break
+        print(f'  get {len(result.users)} users -> {len(activeUserList)}')
+
+        if isBleak:
+            break
+
+        currDate = result.messages[messagesLength - 1].date
+        currMinMsgId = result.messages[messagesLength - 1].id
+
+    return activeUserList
 

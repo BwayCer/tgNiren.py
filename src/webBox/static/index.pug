@@ -16,7 +16,7 @@ html
       .cStatusInfo_niUsers
     section.cGetParticipants
       .cGetParticipants_title
-        span 群組參與者清單
+        span 群組活躍參與者清單 (活躍用戶)
       .cGetParticipants_status
       form.cGetParticipants_form
         .cGetParticipants_form_roomId
@@ -24,6 +24,12 @@ html
           input.markInput(
             type="text"
             placeholder="群組 ID"
+          )
+        .cGetParticipants_form_offsetDays
+          span 過濾期間：
+          input.markInput(
+            type="number"
+            value="7"
           )
         button.cGetParticipants_form_submit
           span 送出

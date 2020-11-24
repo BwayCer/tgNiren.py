@@ -52,6 +52,23 @@ class knownError():
         # 400 USER_CHANNELS_TOO_MUCH
     }
 
+    GetHistoryRequest = {
+        # 必須將臨時身份驗證密鑰綁定到永久身份驗證密鑰，才能使用這些方法。
+        # 該方法不適用於臨時授權密鑰，未綁定到永久授權密鑰。
+        'AuthKeyPermEmptyError': 'The temporary auth key must be binded to the permanent auth key to use these methods.',
+        'ChannelInvalidError': '',
+        'ChannelPrivateError': '',
+        'ChatIdInvalidError': '',
+        'PeerIdInvalidError': '',
+        # 只有在 https://core.telegram.org/method/messages.getHistory 的錯誤
+        # 400 CONNECTION_DEVICE_MODEL_EMPTY   設備型號為空
+        # 400 MSG_ID_INVALID  提供的消息ID無效
+        # 只有在 https://tl.telethon.dev/methods/messages/get_history.html 的錯誤
+        # 授權密鑰（會話文件）已同時在兩個不同的IP地址下使用，不能再使用。單獨使用同一會話，或使用不同的會話。
+        'AuthKeyDuplicatedError': 'The authorization key (session file) was used under two different IP addresses simultaneously, and can no longer be used. Use the same session exclusively, or use different sessions.',
+        'TimeoutError': '',
+    }
+
     InviteToChannelRequest = {
         'BotGroupsBlockedError': '',
         'BotsTooMuchError': '',
@@ -75,19 +92,24 @@ class knownError():
     }
 
     allMsg = {
+        'AuthKeyDuplicatedError': 'The authorization key (session file) was used under two different IP addresses simultaneously, and can no longer be used. Use the same session exclusively, or use different sessions.',
+        'AuthKeyPermEmptyError': 'The temporary auth key must be binded to the permanent auth key to use these methods.',
         'BotGroupsBlockedError': '此機器人不能被加到群組中。',
         'BotsTooMuchError': '過多的機器人在聊天/頻道中。',
         'ChannelInvalidError': '無效的頻道對象。',
         'ChannelPrivateError': '您無法加入私人的頻道/超級群組。另一個原因可能是您被禁止了。',
         'ChannelsTooMuchError': '您加入了太多的頻道/超級群組。',
         'ChatAdminRequiredError': '您沒有執行此操作的權限。',
+        'ChatIdInvalidError': '無效的 Chat ID 對象。',
         'ChatInvalidError': '無效的聊天對象。',
         'ChatWriteForbiddenError': '您無法在此聊天中發送訊息。',
         'InputUserDeactivatedError': '指定的用戶已被刪除。',
         'InviteHashEmptyError': '邀請連結丟失。',
         'InviteHashExpiredError': '邀請連結已過期。',
         'InviteHashInvalidError': '無效的邀請連結。',
+        'PeerIdInvalidError': '無效的 Peer ID 對象。',
         'SessionPasswordNeededError': '啟用了兩步驗證，並且需要密碼。',
+        'TimeoutError': '請求超時。', # python 原生錯誤類型
         'UserAlreadyParticipantError': '已經是聊天的參與者。',
         'UserBannedInChannelError': '您被禁止在超級群組/頻道中發送消息。',
         'UserBlockedError': '被用戶拒絕。', # 黑名單
