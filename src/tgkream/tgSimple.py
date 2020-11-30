@@ -27,7 +27,7 @@ knownError = errors.knownError
 
 class TgSimple(TgSession):
     def __init__(self,
-            apiId: str,
+            apiId: int,
             apiHash: str,
             sessionPrifix: str,
             papaPhone: str = 0):

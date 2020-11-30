@@ -83,7 +83,7 @@ def TgDefaultInit(TgClass, *args, **kwargs):
     return TgClass(
         apiId,
         novice.py_env['apiHash'],
-        sessionPrifix = 'telethon-' + apiId,
+        sessionPrifix = 'telethon-' + str(apiId),
         *args, **kwargs
     )
 

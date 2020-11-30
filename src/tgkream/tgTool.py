@@ -170,7 +170,7 @@ class _TgChanData(utils.chanData.ChanData):
 
 class _TgNiUsers():
     def __init__(self,
-            apiId: str,
+            apiId: int,
             apiHash: str,
             sessionPrifix: str,
             clientCount: int = 3,
@@ -427,7 +427,7 @@ class _TgNiUsers():
 
 class TgBaseTool(_TgNiUsers):
     def __init__(self,
-            apiId: str,
+            apiId: int,
             apiHash: str,
             sessionPrifix: str,
             clientCount: int = 3,

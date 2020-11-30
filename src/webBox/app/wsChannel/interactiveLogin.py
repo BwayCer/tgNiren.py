@@ -16,7 +16,7 @@ __all__ = ['login', 'sendCode', 'verifiedCode', 'verifiedPassword', 'deleteAccou
 
 
 TelegramClient = telethon.TelegramClient
-tgSession = TgSession('telethon-' + novice.py_env['apiId'])
+tgSession = TgSession('telethon-' + str(novice.py_env['apiId']))
 
 
 async def login(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
