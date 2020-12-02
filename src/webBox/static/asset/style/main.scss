@@ -89,7 +89,8 @@ body {
 
   &_form {
     &_verifiedCode {
-      &_otherSentBtn {
+      &_otherSentBtn,
+      &_useQrLogin {
         margin-left: 0.4em;
       }
     }

@@ -3,8 +3,11 @@
 
 import typing
 import os
+import datetime
 import re
 import random
+import asyncio
+import base64
 import telethon.sync as telethon
 import utils.novice as novice
 import webBox.serverMix as serverMix
@@ -96,6 +99,199 @@ async def login(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
         info['phoneCodeHash'] = sendCodeInfo['phoneCodeHash']
         return sendCodeInfo
 
+async def qrLogin(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
+    if type(prop) != dict:
+        return {
+            'code': -1,
+            'messageType': '_restrictedType',
+            'message': _getMessage.logNotRecord(
+                _interactiveLoginMessage, '_restrictedType', 'prop', 'Object'
+            ),
+        }
+    if not ('phoneNumber' in prop and type(prop['phoneNumber']) == str):
+        return {
+            'code': -1,
+            'messageType': '_notExpectedType',
+            'message': _getMessage.logNotRecord(
+                _interactiveLoginMessage, '_notExpectedType', 'prop.phoneNumber'
+            ),
+        }
+    if not ('phoneCodeHash' in prop and type(prop['phoneCodeHash']) == str):
+        return {
+            'code': -1,
+            'messageType': '_notExpectedType',
+            'message': _getMessage.logNotRecord(
+                _interactiveLoginMessage, '_notExpectedType', 'prop.phoneCodeHash'
+            ),
+        }
+
+    errInfo, runIdCode, info = _checkSession(
+        pageId, 'qrLogin', prop['phoneNumber'], prop['phoneCodeHash']
+    )
+    if errInfo != None:
+        return errInfo
+
+    if info['isQrLogin']:
+        nowDt = datetime.datetime.utcnow().replace(
+            tzinfo=datetime.timezone.utc
+        )
+        return {
+            'code': 5,
+            'messageType': 'qrTrying',
+            'message': _getMessage.log(
+                runIdCode, _interactiveLoginMessage, 'qrTrying',
+                int(info['qrExpiresDt'].timestamp() - nowDt.timestamp()) \
+                    if info['qrExpiresDt'] != None else '---'
+            ),
+        }
+
+    info['isQrLogin'] = True
+    info['qrExpiresDt'] = None
+
+    asyncio.ensure_future(_qrLoginAction(pageId, runIdCode, info))
+    return {
+        'code': 5,
+        'messageType': 'qrRequestReceived',
+        'message': _getMessage.log(
+            runIdCode, _interactiveLoginMessage, 'qrRequestReceived'
+        ),
+    }
+
+async def _qrLoginAction(pageId: str, runIdCode: str, info: dict):
+    phoneNumber = info['phoneNumber']
+    client = info['client']
+
+    novice.logNeedle.push(
+        '(runId: {}) client(auth.ExportLoginTokenRequest()) +{} use QRcode Login'.format(
+            runIdCode, phoneNumber
+        )
+    )
+    try:
+        exportLoginTokenResult = await client(
+            telethon.functions.auth.ExportLoginTokenRequest(
+                api_id = novice.py_env['apiId'],
+                api_hash = novice.py_env['apiHash'],
+                except_ids = []
+            )
+        )
+    except Exception as err:
+        info['isQrLogin'] = False
+
+        errTypeName = err.__class__.__name__
+        await serverMix.wsHouse.send(pageId, fnResult = {
+            'name': 'interactiveLogin.qrLogin',
+            'result': {
+                'code': -3,
+                'messageType': errTypeName,
+                'message': _getMessage.catchError(
+                    runIdCode,
+                    'client(auth.ExportLoginTokenRequest())',
+                    {},
+                    errTypeName
+                ),
+            },
+        })
+
+    successLoginType = ''
+    exportLoginTokenResultType = type(exportLoginTokenResult)
+    if exportLoginTokenResultType == telethon.types.auth.LoginToken:
+        nowDt = datetime.datetime.utcnow().replace(
+            tzinfo=datetime.timezone.utc
+        )
+        expiresDt = exportLoginTokenResult.expires
+        info['qrExpiresDt'] = expiresDt
+        expiresSec = int(expiresDt.timestamp() - nowDt.timestamp())
+        novice.logNeedle.push(
+            '(runId: {}) get QRcode Token and after {} second expires'.format(
+                runIdCode, expiresSec
+            )
+        )
+
+        token = base64.b64encode(exportLoginTokenResult.token).decode()
+        await serverMix.wsHouse.send(pageId, fnResult = {
+            'name': 'interactiveLogin.qrLogin',
+            'result': {
+                'code': 5,
+                'messageType': 'qrToken',
+                'message': _getMessage.log(
+                    runIdCode, _interactiveLoginMessage, 'qrToken', expiresSec
+                ),
+                'token': f'tg://login?token={token}',
+                'expires': int(expiresDt.timestamp() * 1000),
+            },
+        })
+
+        await asyncio.sleep(expiresSec)
+        try:
+            exportLoginTokenResult = await client(
+                telethon.functions.auth.ExportLoginTokenRequest(
+                    api_id = novice.py_env['apiId'],
+                    api_hash = novice.py_env['apiHash'],
+                    except_ids = []
+                )
+            )
+        except Exception as err:
+            info['isQrLogin'] = False
+            await serverMix.wsHouse.send(pageId, fnResult = {
+                'name': 'interactiveLogin.qrLogin',
+                'result': {
+                    'code': 5,
+                    'messageType': 'qrTokenExpired',
+                    'message': _getMessage.log(
+                        runIdCode, _interactiveLoginMessage, 'qrTokenExpired'
+                    ),
+                },
+            })
+
+        if type(exportLoginTokenResult) == telethon.types.auth.LoginTokenSuccess:
+            successLoginType = 'successLogin'
+        else:
+            info['isQrLogin'] = False
+            await serverMix.wsHouse.send(pageId, fnResult = {
+                'name': 'interactiveLogin.qrLogin',
+                'result': {
+                    'code': 5,
+                    'messageType': 'qrTokenExpired',
+                    'message': _getMessage.log(
+                        runIdCode, _interactiveLoginMessage, 'qrTokenExpired'
+                    ),
+                },
+            })
+    elif exportLoginTokenResultType == telethon.types.auth.LoginTokenSuccess:
+        successLoginType = 'loggedin'
+    else:
+        info['isQrLogin'] = False
+        await serverMix.wsHouse.send(pageId, fnResult = {
+            'name': 'interactiveLogin.qrLogin',
+            'result': {
+                'code': -2,
+                'messageType': 'qrUnknownType',
+                'message': _getMessage.log(
+                    runIdCode, _interactiveLoginMessage, 'qrUnknownType',
+                    exportLoginTokenResultType.__name__
+                ),
+            },
+        })
+
+    if successLoginType != '':
+        info['isQrLogin'] = False
+
+        _mvSessionPath(runIdCode, info['phoneNumber'], fromAddPrifix = 'tmpLogin')
+        await _disconnectClient(runIdCode, info, client)
+
+        await niUsersStatusUpdateStatus(allCount = 1, usableCount = 1)
+        await serverMix.wsHouse.send(pageId, fnResult = {
+            'name': 'interactiveLogin.qrLogin',
+            'result': {
+                'code': 4,
+                'messageType': successLoginType,
+                'message': _getMessage.log(
+                    runIdCode, _interactiveLoginMessage, successLoginType, phoneNumber
+                ),
+                'phoneNumber': phoneNumber,
+            },
+        })
+
 async def sendCode(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     if type(prop) != dict:
         return {
@@ -127,6 +323,20 @@ async def sendCode(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     )
     if errInfo != None:
         return errInfo
+
+    if info['isQrLogin']:
+        nowDt = datetime.datetime.utcnow().replace(
+            tzinfo=datetime.timezone.utc
+        )
+        return {
+            'code': 5,
+            'messageType': 'qrTrying',
+            'message': _getMessage.log(
+                runIdCode, _interactiveLoginMessage, 'qrTrying',
+                int(info['qrExpiresDt'].timestamp() - nowDt.timestamp()) \
+                    if info['qrExpiresDt'] != None else '---'
+            ),
+        }
 
     phoneNumber = info['phoneNumber']
     client = info['client']
@@ -177,6 +387,20 @@ async def verifiedCode(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     )
     if errInfo != None:
         return errInfo
+
+    if info['isQrLogin']:
+        nowDt = datetime.datetime.utcnow().replace(
+            tzinfo=datetime.timezone.utc
+        )
+        return {
+            'code': 5,
+            'messageType': 'qrTrying',
+            'message': _getMessage.log(
+                runIdCode, _interactiveLoginMessage, 'qrTrying',
+                int(info['qrExpiresDt'].timestamp() - nowDt.timestamp()) \
+                    if info['qrExpiresDt'] != None else '---'
+            ),
+        }
 
     verifiedCode = prop['verifiedCode']
 
@@ -295,6 +519,20 @@ async def verifiedPassword(pageId: str, wsId: str, prop: typing.Any = None) -> d
     if errInfo != None:
         return errInfo
 
+    if info['isQrLogin']:
+        nowDt = datetime.datetime.utcnow().replace(
+            tzinfo=datetime.timezone.utc
+        )
+        return {
+            'code': 5,
+            'messageType': 'qrTrying',
+            'message': _getMessage.log(
+                runId, _interactiveLoginMessage, 'qrTrying',
+                int(info['qrExpiresDt'].timestamp() - nowDt.timestamp()) \
+                    if info['qrExpiresDt'] != None else '---'
+            ),
+        }
+
     password = prop['password']
 
     phoneNumber = info['phoneNumber']
@@ -370,6 +608,20 @@ async def deleteAccount(pageId: str, wsId: str, prop: typing.Any = None) -> dict
     )
     if errInfo != None:
         return errInfo
+
+    if info['isQrLogin']:
+        nowDt = datetime.datetime.utcnow().replace(
+            tzinfo=datetime.timezone.utc
+        )
+        return {
+            'code': 5,
+            'messageType': 'qrTrying',
+            'message': _getMessage.log(
+                runIdCode, _interactiveLoginMessage, 'qrTrying',
+                int(info['qrExpiresDt'].timestamp() - nowDt.timestamp()) \
+                    if info['qrExpiresDt'] != None else '---'
+            ),
+        }
 
     phoneNumber = info['phoneNumber']
     phoneCodeHash = info['phoneCodeHash']
@@ -519,6 +771,8 @@ _interactiveLoginMessage = {
     # -2 互動錯誤
     'noUserToLogin': '沒有待登入的用戶。',
     'userNotSame': '登入的仿用戶 (+{}) 與主機留存仿用戶 (+{}) 不相同',
+    'qrUnknownType': 'QR 碼驗證方法失敗 (type: {})',
+    'qrErrorOnCheck': '無法取得 QR 碼驗證結果，請再嘗試一次。 (type: {})',
     # -1 程式錯誤
     # 1 驗證碼互動
     'sendCode': '已使用 {} 傳送驗證碼。',
@@ -538,6 +792,11 @@ _interactiveLoginMessage = {
     'loggedin': '+{} 仿用戶已登入',
     'successLogin': '+{} 仿用戶登入成功',
     'successSingup': '+{} 仿用戶註冊成功',
+    # 5 其他互動 (二維碼)
+    'qrRequestReceived': '請稍待 QR 碼',
+    'qrToken': '請掃描 QR 碼驗證 (於 {} 秒後過期)',
+    'qrTrying': '目前正使用 QR 碼驗證中 (於 {} 秒後過期)',
+    'qrTokenExpired': 'QR 碼已過期，請再嘗試一次。',
 }
 _sendCodeKnownErrorTypeInfo = {
     'ApiIdInvalidError': 'API ID 無效。',
@@ -651,6 +910,8 @@ def _checkSession(
             'runId': runId,
             'phoneNumber': '',
             'phoneCodeHash': '',
+            'isQrLogin': False,
+            'qrExpiresDt': None,
             'verifiedCode': '',
             'passwordHint': '',
             'client': None,

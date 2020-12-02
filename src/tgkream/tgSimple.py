@@ -5,9 +5,11 @@ import pdb
 import typing
 import os
 import getpass
+import datetime
 import re
 import random
 import asyncio
+import base64
 import telethon.sync as telethon
 import tgkream.errors as errors
 import utils.novice as novice
@@ -49,7 +51,7 @@ class TgSimple(TgSession):
             self._apiId,
             self._apiHash
         )
-        isLoginSuccess = await _interactiveLogin(phoneNumber, client)
+        isLoginSuccess = await _interactiveLogin(phoneNumber, client, self._apiId, self._apiHash)
 
         print('--- login +{} {} ---'.format(
             phoneNumber,
@@ -102,7 +104,7 @@ class TgSimple(TgSession):
                 break
 
 
-async def _interactiveLogin(phoneNumber: str, client: TelegramClient) -> bool:
+async def _interactiveLogin(phoneNumber: str, client: TelegramClient, apiId: int, apiHash: str) -> bool:
     print('--> client.connect()')
     try:
         await client.connect()
@@ -229,7 +231,68 @@ async def _interactiveLogin(phoneNumber: str, client: TelegramClient) -> bool:
                     sendCodeMsg += ' (phoneCodeHash: {})'.format(phoneCodeHash)
                 print(sendCodeMsg)
 
-                signInMethod = 'changeSendCodeMode'
+                signInMethod = 'qrLogin'
+            elif signInMethod == 'qrLogin':
+                useQrcodeModeInput = _inputYesOrNo(input(
+                    f'login {phoneNumber}, Whether to login by QR code ? [Y/N]: '
+                ))
+                if useQrcodeModeInput == 'yes':
+                    pass
+                elif useQrcodeModeInput == 'no':
+                    signInMethod = 'changeSendCodeMode'
+                    continue
+                else:
+                    continue
+
+                isLoginSuccess = False
+                while True:
+                    print('----> client(auth.ExportLoginTokenRequest)')
+                    try:
+                        exportLoginTokenResult = await client(telethon.functions.auth.ExportLoginTokenRequest(
+                            api_id = apiId,
+                            api_hash = apiHash,
+                            except_ids = []
+                        ))
+                    except Exception as err:
+                        print('{} Error: {} (from: {})'.format(
+                            type(err), err, 'client(auth.ExportLoginTokenRequest)'
+                        ))
+                        raise err
+
+                    if type(exportLoginTokenResult) \
+                            == telethon.types.auth.LoginTokenSuccess:
+                        print('-----> 其實已登入')
+                        isLoginSuccess = True
+                        break
+
+                    print('-----> QR Token: tg://login?token={}'.format(
+                        base64.b64encode(exportLoginTokenResult.token).decode()
+                    ))
+                    while True:
+                        # 無法使用 `await client.is_user_authorized()` 檢查是否已登入
+
+                        nowDt = datetime.datetime.utcnow().replace(
+                            tzinfo=datetime.timezone.utc
+                        )
+                        if nowDt >= exportLoginTokenResult.expires:
+                            break
+                        await asyncio.sleep(3)
+
+                    if isLoginSuccess == True:
+                        break
+
+                    useQrcodeModeInput = _inputYesOrNo(input(
+                        f'login {phoneNumber}, Is continue to login by QR code ? [Y/N]: '
+                    ))
+                    if useQrcodeModeInput == 'yes':
+                        continue
+                    else:
+                        break
+
+                if isLoginSuccess == True:
+                    signInMethod = 'finish'
+                else:
+                    signInMethod = 'changeSendCodeMode'
             elif signInMethod == 'changeSendCodeMode':
                 if isCanChangeSendCodeMode:
                     useNextSendCodeModeInput = _inputYesOrNo(input(

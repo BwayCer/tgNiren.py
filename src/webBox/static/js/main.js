@@ -170,9 +170,33 @@
         const helFormName = document.querySelector('.cLogin_form_signup > .markInput');
 
         const helOtherSentBtn = document.querySelector('.cLogin_form_verifiedCode_otherSentBtn');
+        const helUseQrLoginBtn = document.querySelector('.cLogin_form_verifiedCode_useQrLogin');
         const helDeleteAccountBtn = document.querySelector('.cLogin_form_password_deleteAccount');
         const helFormSubmitBtn = document.querySelector('.cLogin_form_submit');
         const helFormResetBtn = document.querySelector('.cLogin_form_reset');
+
+        let loginQrcode = null;
+        if (typeof window.QRCode !== 'object') {
+            let helQrcodeBox = document.querySelector('.cLogin_qrcodeBox');
+            helQrcodeBox.style.display = 'none';
+            loginQrcode = {
+                _qrcode: new QRCode(helQrcodeBox, {
+                      text: '',
+                      width: 128,
+                      height: 128,
+                      colorDark : '#000',
+                      colorLight : '#fff',
+                      correctLevel : QRCode.CorrectLevel.L
+                }),
+                update(url) {
+                    this._qrcode.makeCode(url);
+                    helQrcodeBox.style.display = 'block';
+                },
+                clear() {
+                    helQrcodeBox.style.display = 'none';
+                }
+            };
+        }
 
         let interactiveLoginInfo = {
             prevRequest: null,
@@ -184,6 +208,7 @@
 
         wsMethodBox['interactiveLogin.login']
             = wsMethodBox['interactiveLogin.sendCode']
+            = wsMethodBox['interactiveLogin.qrLogin']
             = wsMethodBox['interactiveLogin.verifiedCode']
             = wsMethodBox['interactiveLogin.verifiedPassword']
             = wsMethodBox['interactiveLogin.deleteAccount']
@@ -225,6 +250,16 @@
                         break;
                     case 'c2_registerAgain':
                         interactiveLoginInfo.stateCode = 3;
+                        break;
+                    case 'c5_qrToken':
+                        loginQrcode.update(result.token);
+                        break;
+                    case 'c4_loggedin':
+                    case 'c4_successLogin':
+                    case 'c5_qrTokenExpired':
+                    case 'c-2_qrTokenExpired':
+                    case 'c-2_qrUnknownType':
+                        loginQrcode.clear();
                         break;
                 }
             }
@@ -270,6 +305,34 @@
                 },
             };
             pushLoginPop('以其他方式寄送');
+            ws.send(JSON.stringify({wsId, fns: [payload]}));
+        });
+        helUseQrLoginBtn.addEventListener('click', function (evt) {
+            evt.preventDefault();
+
+            if (interactiveLoginInfo.stateCode < 1) {
+                pushLoginPop('流程錯誤！ 請先送出電話號碼。');
+            }
+
+            if (loginQrcode === null) {
+                pushLoginPop('不支援 QR 碼登入！');
+            }
+
+            let phoneNumber = helFormPhone.value;
+            if (phoneNumber === '') {
+                pushLoginPop('流程錯誤！ 電話號碼丟失。');
+                return;
+            }
+
+            let payload = {
+                randId: getRandomId(),
+                name: 'interactiveLogin.qrLogin',
+                prop: {
+                    phoneNumber: phoneNumber,
+                    phoneCodeHash: interactiveLoginInfo.phoneCodeHash,
+                },
+            };
+            pushLoginPop('使用 QR 碼登入');
             ws.send(JSON.stringify({wsId, fns: [payload]}));
         });
         helDeleteAccountBtn.addEventListener('click', async function (evt) {

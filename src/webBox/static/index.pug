@@ -10,6 +10,7 @@ html
     link(rel="stylesheet" href="./asset/style/reset.css")
 
     link(rel="stylesheet" href="./asset/style/main.css")
+    script(defer src="./js/plugin/qrcode.js")
     script(defer src="./js/main.js")
   body
     section.cStatusInfo
@@ -87,6 +88,7 @@ html
       .cLogin_title
         span 登入
       .cLogin_status
+      .cLogin_qrcodeBox
       form.cLogin_form
         .cLogin_form_phone
           span 手機號碼：
@@ -102,6 +104,8 @@ html
           )
           button.cLogin_form_verifiedCode_otherSentBtn
             span 以其他方式寄送
+          button.cLogin_form_verifiedCode_useQrLogin
+            span 使用 QR 碼登入
         .cLogin_form_password
           span 二次驗證碼：
           input.markInput(
