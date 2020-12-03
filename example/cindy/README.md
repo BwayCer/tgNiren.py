@@ -17,11 +17,11 @@
 
 ```
 # 把辛蒂提供的資料轉 JSON
-pipenv run ./src/tool.py buyAccount.cindy txtToJson ./example/cindy/voipTable.txt
-cat ./example/cindy/voipTable.txt.json
+pipenv run ./src/tool.py modemPool.cindy txtToJson ./example/cindy/modemCardTable.txt
+cat ./example/cindy/modemCardTable.txt.json
 
 # 自動註冊 Telegram 並加入指定群組
-pipenv run ./src/tool.py buyAccount.cindy autoLogin \
-    ./example/cindy/voipTable.txt.json <TG 群組識別碼> <仿用戶中間名>
+pipenv run ./src/tool.py modemPool.cindy autoLogin \
+    ./example/cindy/modemCardTable.txt.json <TG 群組識別碼> <仿用戶中間名>
 ```
 

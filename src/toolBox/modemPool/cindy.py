@@ -7,15 +7,19 @@ import os
 import sys
 import random
 import time
+import datetime
 import re
 import json
 import requests
 import utils.json
 import telethon.sync as telethon
-import datetime
+import utils.novice as novice
 
 
 TelegramClient = telethon.TelegramClient
+
+_envModemPool = novice.py_env['modemPool']
+_nameListFilePath = novice.py_dirname + '/' + _envModemPool['nameListFilePath']
 
 
 def run(args: list, _dirpy: str, _dirname: str):
@@ -27,8 +31,7 @@ def run(args: list, _dirpy: str, _dirname: str):
         voipTableFilePath = args[2]
         groupPeer = args[3]
         middleName = args[4]
-        _env = utils.json.loadYml(_dirname + '/env.yml')
-        run_autoLogin(_dirpy, _env, voipTableFilePath, groupPeer, middleName)
+        run_autoLogin(voipTableFilePath, groupPeer, middleName)
 
 def run_txtToJson(voipTxtFilePath: str):
     voipTableFilePath = voipTxtFilePath + '.json'
@@ -55,16 +58,14 @@ def run_txtToJson(voipTxtFilePath: str):
         utils.json.dump(voipInfos, voipTableFilePath)
 
 def run_autoLogin(
-        _dirpy: str,
-        _env: dict,
         voipTableFilePath: str,
         groupPeer: str,
         middleName: str):
     voipTable = _VoipTable(voipTableFilePath)
-    nameList = utils.json.loadYml(_dirpy + '/nameList.yml')
+    nameList = utils.json.loadYml(_nameListFilePath)
     tgSigninTool = _TgSigninTool(
-        apiId = _env['apiId'],
-        apiHash = _env['apiHash'],
+        apiId = novice.py_env['apiId'],
+        apiHash = novice.py_env['apiHash'],
         sessionPrefix = 'newTgSession/telethon-',
         groupCode = groupPeer,
         randomName = _RandomName(middleName, nameList)
