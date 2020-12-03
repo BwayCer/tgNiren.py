@@ -9,10 +9,11 @@ import random
 import time
 import datetime
 import re
-import json
+import asyncio
+import select
 import requests
 import utils.json
-import telethon.sync as telethon
+import telethon as telethon
 import utils.novice as novice
 
 
@@ -21,29 +22,22 @@ TelegramClient = telethon.TelegramClient
 _envModemPool = novice.py_env['modemPool']
 _nameListFilePath = novice.py_dirname + '/' + _envModemPool['nameListFilePath']
 
+_asyncRun_autoLogin_tasksAmountMax = 1
+_voipTable_gPickVoipInfo_inputTimeoutSec = 0.1 # 3
+_tgSmsCode_get_inputTimeoutSec = 0.1 # 7
 
-def run(args: list, _dirpy: str, _dirname: str):
-    method = args[1]
-    if method == 'txtToJson':
-        voipTxtFilePath = args[2]
-        run_txtToJson(voipTxtFilePath)
-    elif method == 'autoLogin':
-        voipTableFilePath = args[2]
-        groupPeer = args[3]
-        middleName = args[4]
-        run_autoLogin(voipTableFilePath, groupPeer, middleName)
 
-def run_txtToJson(voipTxtFilePath: str):
+def _run_txtToJson(voipTxtFilePath: str):
     voipTableFilePath = voipTxtFilePath + '.json'
     with open(voipTxtFilePath, 'r', encoding = 'utf-8') as fs:
         voipInfos = []
-        regeCindyVoipTxt = r'^(\d+)\|([0-9a-f]+)\n$'
+        regeCindyVoipTxt = r'^(\d+)\|([0-9a-fA-F]+)\n$'
         lines = fs.readlines()
         for line in lines:
             matchTgCode = re.search(regeCindyVoipTxt, line)
 
             if not matchTgCode:
-                raise Exception('不符合預期的格式 ({})'.format(line))
+                raise Exception(f'不符合預期的格式 ({line})')
 
             number = matchTgCode.group(1)
             token = matchTgCode.group(2)
@@ -57,51 +51,90 @@ def run_txtToJson(voipTxtFilePath: str):
 
         utils.json.dump(voipInfos, voipTableFilePath)
 
-def run_autoLogin(
+async def _asyncRun_autoLogin(
         voipTableFilePath: str,
         groupPeer: str,
         middleName: str):
-    voipTable = _VoipTable(voipTableFilePath)
+    apiId = novice.py_env['apiId']
     nameList = utils.json.loadYml(_nameListFilePath)
     tgSigninTool = _TgSigninTool(
-        apiId = novice.py_env['apiId'],
-        apiHash = novice.py_env['apiHash'],
-        sessionPrefix = 'newTgSession/telethon-',
+        apiId,
+        novice.py_env['apiHash'],
+        sessionPrefix = 'cindy/telethon-' + apiId + '-',
         groupCode = groupPeer,
         randomName = _RandomName(middleName, nameList)
     )
+    voipTable = _VoipTable(voipTableFilePath)
+    tgSmsCode = _tgSmsCode(novice.py_env['cindy']['registerUrl'])
 
+    runLoginTasks = []
     for voipInfo in voipTable.gPickVoipInfo():
+        runLoginTasks.append(
+            _autoLoginHandle(voipInfo, tgSigninTool, voipTable, tgSmsCode)
+        )
+
+        if len(runLoginTasks) == _asyncRun_autoLogin_tasksAmountMax:
+            await asyncio.gather(*runLoginTasks)
+            runLoginTasks.clear()
+
+    if len(runLoginTasks) != 0:
+        await asyncio.gather(*runLoginTasks)
+
+async def _run_checkOk(voipTableFilePath: str):
+    apiId = novice.py_env['apiId']
+    nameList = utils.json.loadYml(_nameListFilePath)
+    voipTable = _VoipTable(voipTableFilePath)
+
+    sessionPrefix = 'cindy/telethon-' + apiId + '-';
+
+    for voipInfo in voipTable.gPickOkVoipInfo():
         # if not idx < 30: break
         phoneNumber = voipInfo['phone']
         token = voipInfo['token']
 
-        result = tgSigninTool.connect(phoneNumber)
+        # result = tgSigninTool.connect(phoneNumber)
+        sessionFilePathPart = sessionPrefix + phoneNumber
+        sessionFilePath = sessionFilePathPart + '.session'
+        if not os.path.exists(sessionFilePath):
+            print(f'找不到 "{sessionFilePath}" 文件。')
 
-        if result == _TgSigninTool.connectStete['LOGINING']:
-            print('[run]: skip. (電話號碼已存在並且驗證通過)')
-            voipTable.setItemState(voipInfo, 'OK')
-            continue
-        if result == _TgSigninTool.connectStete['HASBANNED']:
-            # The used phone number has been banned from Telegram and cannot be used any more.
-            # Maybe check https://www.telegram.org/faq_spam
-            print('[run]: skip. (The used phone number has been banned)')
-            continue
-        elif result != _TgSigninTool.connectStete['SENDBYSMS']:
-            print('[run]: skip. (無法使用自動化登入) ({})'.format(result))
-            print('[run]: {} != {}.'.format(result, _TgSigninTool.connectStete['SENDBYSMS']))
-            continue
+        client = TelegramClient(sessionFilePathPart, apiId, novice.py_env['apiHash'])
 
-        tgSmsCodeState, verifiedCode = _tgSmsCode.get(token)
-        tgSigninTool.signUp(phoneNumber, verifiedCode)
-
-        myName = tgSigninTool.getMyName()
-        if not myName:
-            print('[run]: Error(找不到我)')
+        try:
+            await client.connect()
+        except Exception as err:
+            print(f'+{phoneNumber}')
+            print('from client.connect() failed {} Error: {}', type(err), err)
             pdb.set_trace()
+            continue
 
-        tgSigninTool.joinGroup()
-        voipTable.setFinalNmae(voipInfo, myName)
+        if await client.is_user_authorized():
+            print('[run]: 驗證通過')
+            continue
+
+        try:
+            result = await client.send_code_request(phoneNumber)
+        except telethon.errors.PhoneNumberBannedError as err:
+            print('[run]: The used phone number has been banned')
+            voipTable.setItemState(voipInfo, 'BANNED')
+            continue
+        except Exception as err:
+            print(f'from client.connect() failed {type(err)} Error: {err}')
+            continue
+
+        sentCodeType = type(result.type)
+        if sentCodeType == telethon.types.auth.SentCodeTypeSms:
+            print('send by sms')
+        elif sentCodeType == telethon.types.auth.SentCodeTypeApp:
+            print('send by app')
+        elif sentCodeType == telethon.types.auth.SentCodeTypeFlashCall:
+            print('send by flash call')
+        elif sentCodeType == telethon.types.auth.SentCodeTypeCall:
+            print('send by call')
+
+
+class _TimeoutExpired(Exception):
+    pass
 
 class _RandomName():
     def __init__(self, lastPrefix: str, nameList: dict):
@@ -118,22 +151,24 @@ class _RandomName():
         return (firstName + ' ' + lastName, firstName, lastName)
 
 class _VoipTable():
-    state = {
-        'NEVER': 'never',
-        'RUNNING': 'running',
-        'UPBANNED': 'upBanned',
-        'INBANNED': 'inBanned',
-        'OK': 'ok',
-    }
-
     def __init__(self, filePath: str):
         if not os.path.exists(filePath):
-            raise Exception('Not Found {} (voipTableFile)'.format(filePath))
+            raise Exception(f'Not found {filePath} (voipTableFile)')
 
         self.filePath = filePath
         self.data = utils.json.load(filePath)
 
+    state = {
+        'NEVER': 'never',
+        'RUNNING': 'running',
+        'BANNED': 'Banned',
+        'TRIED': 'Tried',
+        'OK': 'ok',
+    }
+
     def gPickVoipInfo(self) -> dict:
+        inputTimeoutSec = _voipTable_gPickVoipInfo_inputTimeoutSec
+
         for voipInfo in self.data:
             state = voipInfo['state']
             phoneNumber = voipInfo['phone']
@@ -147,12 +182,31 @@ class _VoipTable():
                 tmpMsg += ' skip. (state: {})'.format(state)
                 print(tmpMsg)
                 continue
-            # TODO 增加默認 3 秒後自動繼續的功能
-            tmpMsg += ' Go (pass <ENTER> to continue)'
-            sys.stdout.write(tmpMsg)
-            sys.stdout.flush()
-            time.sleep(3)
-            print()
+            tmpMsg += f' Go (pass <ENTER> or wait {inputTimeoutSec} seconds to continue)'
+            try:
+                _inputTimeout(inputTimeoutSec, tmpMsg)
+            except _TimeoutExpired:
+                print()
+
+            yield voipInfo
+
+    def gPickOkVoipInfo(self) -> dict:
+        inputTimeoutSec = _voipTable_gPickVoipInfo_inputTimeoutSec
+
+        for voipInfo in self.data:
+            state = voipInfo['state']
+            phoneNumber = voipInfo['phone']
+
+            tmpMsg = '[_VoipTable.gPickVoipInfo]: +{}.'.format(phoneNumber)
+            if state != self.state['OK']:
+                tmpMsg += ' skip. (state: {})'.format(state)
+                print(tmpMsg)
+                continue
+            tmpMsg += f' Go (pass <ENTER> or wait {inputTimeoutSec} seconds to continue)'
+            try:
+                _inputTimeout(inputTimeoutSec, tmpMsg)
+            except _TimeoutExpired:
+                print()
 
             yield voipInfo
 
@@ -186,21 +240,56 @@ class _TgSigninTool():
         if not os.path.exists(sessionDirPath):
             os.makedirs(sessionDirPath)
 
-    def connect(self, phoneNumber: str) -> typing.Union[None, str]:
+    connectStete = {
+        'LOGINING': 'logining',
+        'SENDBYSMS': 'send by sms',
+        'SENDBYAPP': 'send by app',
+        'SENDBYCALL': 'send by call',
+        'HASBANNED': 'has banned',
+        'APIIDINVALID': 'API ID 無效',
+        'PHONENUMBERFLOOD': '您請求代碼的次數過多',
+        'PHONENUMBERINVALID': '電話號碼是無效的',
+        'PHONEPASSWORDFLOOD': '您嘗試登錄太多次了',
+        # 'OTHER': 'any message',
+    }
+
+    async def connect(self, phoneNumber: str) -> typing.Union[None, str]:
         sessionFilePathPart = self.sessionPrefix + phoneNumber
-        self._client = TelegramClient(sessionFilePathPart, self.apiId, self.apiHash)
+        # self._client = TelegramClient(sessionFilePathPart, self.apiId, self.apiHash)
+        self._client = TelegramClient(
+            sessionFilePathPart,
+            self.apiId,
+            self.apiHash,
+            device_model = 'iPhone SE (2nd gen)',
+            system_version = 'Android 9p (28)'
+        )
         client = self._client
 
-        self._client.connect()
-        if client.is_user_authorized():
+        try:
+            await client.connect()
+        except Exception as err:
+            print('from client.connect() failed {} Error: {}', type(err), err)
+            pdb.set_trace()
+
+        if await client.is_user_authorized():
             return self.connectStete['LOGINING']
 
+        print(f'[_TgSigninTool.connect]: send +{phoneNumber} request.')
         try:
-            result = self._client.send_code_request(phoneNumber)
+            result = await client.send_code_request(phoneNumber, force_sms = True)
+        except telethon.errors.ApiIdInvalidError as err:
+            return self.connectStete['APIIDINVALID']
         except telethon.errors.PhoneNumberBannedError as err:
             return self.connectStete['HASBANNED']
+        except telethon.errors.PhoneNumberFloodError as err:
+            return self.connectStete['PhoneNumberFlood']
+        except telethon.errors.PhoneNumberInvalidError as err:
+            return self.connectStete['PhoneNumberInvalid']
+        except telethon.errors.PhonePasswordFloodError as err:
+            return self.connectStete['PHONEPASSWORDFLOOD']
+        except Exception as err:
+            return f'from client.connect() failed {type(err)} Error: {err}'
 
-        print('[_TgSigninTool.connect]: send +{} request.'.format(phoneNumber))
         sentCodeType = type(result.type)
         if sentCodeType == telethon.types.auth.SentCodeTypeSms:
             return self.connectStete['SENDBYSMS']
@@ -218,26 +307,24 @@ class _TgSigninTool():
         ))
         return None
 
-    connectStete = {
-        'HASBANNED': 'has banned',
-        'LOGINING': 'logining',
-        'SENDBYSMS': 'send by sms',
-        'SENDBYAPP': 'send by app',
-        'SENDBYCALL': 'send by call',
-    }
-
-    def joinGroup(self) -> telethon.types.Updates:
-        return self._client(telethon.functions.channels.JoinChannelRequest(
+    async def sayHi(self, txt: str = '') -> telethon.types.Updates:
+        await self._client(telethon.functions.channels.JoinChannelRequest(
             channel = self._groupCode
         ))
+        await self._client(telethon.functions.messages.SendMessageRequest(
+            peer = self._groupCode,
+            message = 'Hi{}'.format(f', {txt}' if txt != '' else ''),
+            random_id = random.randrange(1000000, 9999999)
+        ))
 
-    def signUp(self, phoneNumber: str, verifiedCode: str) -> None:
+    async def signUp(self, phoneNumber: str, verifiedCode: str) -> None:
         client = self._client
         try:
-            client.sign_in(phoneNumber, verifiedCode)
+            await client.sign_in(phoneNumber, verifiedCode)
         except telethon.errors.PhoneNumberUnoccupiedError as err:
             _, firstName, lastName = self._randomName.get()
-            client.sign_up(verifiedCode, firstName, lastName)
+            await client.sign_up(verifiedCode, firstName, lastName)
+            print()
             # 成功的話會出現下列訊息 :
             # By signing up for Telegram, you agree not to:
             #
@@ -247,15 +334,19 @@ class _TgSigninTool():
             #
             # We reserve the right to update these Terms of Service later.
 
-    def getMyName(self) -> typing.Union[str, None]:
-        meInfo = self._client.get_me()
-        if not meInfo:
+    async def getMyName(self) -> typing.Union[str, None]:
+        meInfo = await self._client.get_me()
+        if meInfo == None:
             return meInfo
-        return meInfo.first_name + ' ' + meInfo.last_name
+        return f'{meInfo.first_name} {meInfo.last_name}'
 
 class _tgSmsCode():
+    def __init__(self, registerUrl: str):
+        self.registerUrl = registerUrl
+
     state = {
         'OK': 'ok',
+        'SKIP': 'skip',
     }
 
     _requestState = {
@@ -266,9 +357,10 @@ class _tgSmsCode():
         'SUCCESS': 3,
     }
 
-    def get(token: str) -> typing.Tuple[typing.Union[None, str], str]:
-        registerUrl = 'http://47.105.90.14/napi/view?token='
-        waitOnceTimeSec = 180
+    async def get(self, token: str, phoneNumber: str = '---') -> typing.Tuple[str, str]:
+        inputTimeoutSec = _tgSmsCode_get_inputTimeoutSec
+
+        waitOnceTimeSec = 30
         waitTimeSec = waitOnceTimeSec
         startTimeSec = datetime.datetime.now().timestamp()
 
@@ -277,30 +369,60 @@ class _tgSmsCode():
             sys.stdout.flush()
 
             nextTimeSec = 4
-            requestState, msg = _tgSmsCode._requestSms(registerUrl + token)
-            if requestState == _tgSmsCode._requestState['ERROR']:
+            requestState, msg = self._requestSms(self.registerUrl + token)
+            if requestState == self._requestState['ERROR']:
                 print(' (err: {})'.format(msg))
                 nextTimeSec = 12
-            elif requestState == _tgSmsCode._requestState['HTTPSTATUSCODEERROR']:
+            elif requestState == self._requestState['HTTPSTATUSCODEERROR']:
                 print(' (err: http status code: {})'.format(msg))
                 nextTimeSec = 12
-            elif requestState == _tgSmsCode._requestState['OTHERMESSAGE']:
+            elif requestState == self._requestState['OTHERMESSAGE']:
                 print(' (other message: {})'.format(msg))
-                pdb.set_trace()
-            elif requestState == _tgSmsCode._requestState['SUCCESS']:
+
+                try:
+                    verifiedCodeInput = _inputTimeout(
+                        inputTimeoutSec,
+                        f'[_tgSmsCode.get]: +{phoneNumber} input verified code'
+                        ' (pass <ENTER> continue waiting or input "skip" to skip'
+                        ' (default, or wait {inputTimeoutSec} seconds to skip)): '
+                    )
+                except _TimeoutExpired:
+                    print()
+                    verifiedCodeInput = 'skip'
+
+
+                if verifiedCodeInput == 'skip':
+                    return (self.state['SKIP'], '')
+                elif verifiedCodeInput != '':
+                    return (self.state['OK'], verifiedCodeInput)
+                else:
+                    nextTimeSec = 4
+            elif requestState == self._requestState['SUCCESS']:
                 print('\n[_tgSmsCode.get]: message: {}'.format(msg))
-                return (_tgSmsCode.state['OK'], msg)
+                return (self.state['OK'], msg)
 
             if datetime.datetime.now().timestamp() - startTimeSec > waitTimeSec:
-                # TODO 增加對話互動
-                # 已超過 {} 分鐘，是否還要繼續 ( Yes: y; No: n )
-                print('\n[_tgSmsCode.get]: 已超過 {} 分鐘'.format(waitTimeSec / 60))
-                waitTimeSec += waitOnceTimeSec
-            else:
-                time.sleep(nextTimeSec)
+                waitTimeMinute = waitTimeSec / 60
+                tmpMsg =  '\n[_tgSmsCode.get]:' \
+                         f' +{phoneNumber} 已超過 {waitTimeMinute} 分鐘'
 
-    def _requestSms(url: str) -> typing.Tuple[int, str]:
-        nextTimeSec = 4
+                tmpMsg +=  '，是否還要繼續' \
+                          f' (默認跳過，或者等待 {inputTimeoutSec} 後自動跳過) ? [Y/N]: '
+                try:
+                    continueInput = _inputYesOrNo(_inputTimeout(inputTimeoutSec, tmpMsg))
+                except _TimeoutExpired:
+                    print()
+                    continueInput = 'no'
+
+                if continueInput == 'yes':
+                    startTimeSec = datetime.datetime.now().timestamp()
+                    waitTimeSec += waitOnceTimeSec
+                else:
+                    return (self.state['SKIP'], '')
+            else:
+                await asyncio.sleep(nextTimeSec)
+
+    def _requestSms(self, url: str) -> typing.Tuple[int, str]:
         try:
             response = requests.get(url, timeout = 12)
 
@@ -314,18 +436,18 @@ class _tgSmsCode():
                 stateMethod = 'NOTHASMESSAGE'
                 if smsMsg != 'No has message':
                     stateMethod = 'OTHERMESSAGE'
-                    verifiedCode = _tgSmsCode._getVerifiedCode(smsMsg)
+                    verifiedCode = self._getVerifiedCode(smsMsg)
                     if verifiedCode != None:
-                        return (_tgSmsCode._requestState['SUCCESS'], verifiedCode)
+                        return (self._requestState['SUCCESS'], verifiedCode)
 
-                return (_tgSmsCode._requestState[stateMethod], smsMsg)
+                return (self._requestState[stateMethod], smsMsg)
             else:
-                return (_tgSmsCode._requestState['HTTPSTATUSCODEERROR'], response.status_code)
+                return (self._requestState['HTTPSTATUSCODEERROR'], response.status_code)
         except Exception as err:
-            return (_tgSmsCode._requestState['ERROR'], type(err))
+            return (self._requestState['ERROR'], type(err))
 
-    def _getVerifiedCode(smsMsg: str) -> typing.Union[str, None]:
-        matchTgCode = re.search(_tgSmsCode._getVerifiedCode_regeTgCode, smsMsg)
+    def _getVerifiedCode(self, smsMsg: str) -> typing.Union[str, None]:
+        matchTgCode = re.search(self._getVerifiedCode_regeTgCode, smsMsg)
 
         if not matchTgCode:
             return None
@@ -333,6 +455,107 @@ class _tgSmsCode():
         tgCode = matchTgCode.group(1)
         return tgCode
 
-    _getVerifiedCode_regeTgCode = r'^telegram code (\d{5})$'
+    _getVerifiedCode_regeTgCode = r'^(?:t|T)elegram code (\d{5})$'
 
+async def _autoLoginHandle(
+        voipInfo: dict,
+        tgSigninTool: _TgSigninTool,
+        voipTable: _VoipTable,
+        tgSmsCode: _tgSmsCode):
+    phoneNumber = voipInfo['phone']
+    token = voipInfo['token']
+
+    result = await tgSigninTool.connect(phoneNumber)
+
+    if result == _TgSigninTool.connectStete['LOGINING']:
+        print(f'[run]: +{phoneNumber} 驗證通過')
+        return
+    if result == _TgSigninTool.connectStete['HASBANNED']:
+        # The used phone number has been banned from Telegram and cannot be used any more.
+        # Maybe check https://www.telegram.org/faq_spam
+        print(f'[run]: +{phoneNumber} The used phone number has been banned')
+        voipTable.setItemState(voipInfo, 'BANNED')
+        return
+    elif result != _TgSigninTool.connectStete['SENDBYSMS']:
+        print(f'[run]: +{phoneNumber} skip. (無法使用自動化登入) ({result})')
+        print(f'[run]: +{phoneNumber} # {result} != {_TgSigninTool.connectStete["SENDBYSMS"]}.')
+        voipTable.setItemState(voipInfo, 'TRIED')
+        return
+
+    tgSmsCodeState, verifiedCode = await tgSmsCode.get(token, phoneNumber)
+    if tgSmsCodeState != _tgSmsCode.state['OK']:
+        voipTable.setItemState(voipInfo, 'TRIED')
+        return
+
+    voipTable.setItemState(voipInfo, 'OK')
+    print(f'[run]: +{phoneNumber} 可以使用')
+    await tgSigninTool.signUp(phoneNumber, verifiedCode)
+
+    myName = await tgSigninTool.getMyName()
+    if myName != None:
+        print(f'My name is {myName} and phone is {phoneNumber}.')
+        await tgSigninTool.sayHi(f'I\'m {myName}')
+        voipTable.setFinalNmae(voipInfo, myName)
+    else:
+        print('[run]: Error(找不到我)')
+        pdb.set_trace()
+
+def _inputYesOrNo(inputTxt: str) -> str:
+    if inputTxt == 'Yes' or inputTxt == 'yes' or inputTxt == 'Y' or inputTxt == 'y':
+        return 'yes'
+    elif inputTxt == 'No' or inputTxt == 'no' or inputTxt == 'N' or inputTxt == 'n':
+        return 'no'
+    else:
+        return inputTxt
+
+# https://stackoverflow.com/questions/15528939/python-3-timed-input
+def _inputTimeout(timeout: int, promptTxt: str) -> str:
+    sys.stdout.write(promptTxt)
+    sys.stdout.flush()
+    ready, _, _ = select.select([sys.stdin], [], [], timeout)
+    if ready:
+        # expect stdin to be line-buffered
+        return sys.stdin.readline().rstrip('\n')
+    raise _TimeoutExpired
+
+
+def run(args: list, _dirpy: str, _dirname: str):
+    txtToJsonUsageTxt = 'txtToJson <voipTxtFilePath>'
+    autoLoginUsageTxt = 'autoLogin <voipTableFilePath> <groupPeer> <middleName>'
+    checkOkUsageTxt = 'checkOk <voipTableFilePath>'
+
+    argsLength = len(args)
+    if argsLength > 1:
+        method = args[1]
+        if method == 'txtToJson':
+            if argsLength < 3:
+                raise ValueError(f'Usage: {txtToJsonUsageTxt}')
+
+            voipTxtFilePath = args[2]
+            _run_txtToJson(voipTxtFilePath)
+            return
+        elif method == 'autoLogin':
+            if argsLength < 5:
+                raise ValueError(f'Usage: {autoLoginUsageTxt}')
+
+            voipTableFilePath = args[2]
+            groupPeer = args[3]
+            middleName = args[4]
+            asyncio.run(
+                _asyncRun_autoLogin(voipTableFilePath, groupPeer, middleName)
+            )
+            return
+        elif method == 'checkOk':
+            if argsLength < 3:
+                raise ValueError(f'Usage: {checkOkUsageTxt}')
+
+            voipTableFilePath = args[2]
+            asyncio.run(_run_checkOk(voipTableFilePath))
+            return
+
+    raise ValueError(
+        f'Usage: {txtToJsonUsageTxt}\n'
+        f'       {autoLoginUsageTxt}\n'
+        f'       {checkOkUsageTxt}'
+    )
 
