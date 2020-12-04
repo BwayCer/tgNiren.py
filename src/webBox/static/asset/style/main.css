@@ -120,4 +120,14 @@ body {
   margin: 0 0.4em;
 }
 
+.cLog {
+  padding: 1em;
+}
+.cLog textarea {
+  margin: 0.5em 0;
+  width: 60%;
+  height: 160px;
+  resize: none;
+}
+
 /*# sourceMappingURL=main.css.map */

@@ -447,6 +447,54 @@
         });
     })();
 
+    class LogRecord {
+        constructor() {
+            this.elemTextarea = document.createElement('textarea');
+            this.elemTextarea.style.display = 'none';
+            this._elemLogArea.appendChild(this.elemTextarea);
+        }
+
+        _elemLogArea = document.querySelector('.cLog');
+
+        push(txt) {
+            let now = new Date();
+            let elemTextarea = this.elemTextarea;
+
+            if (this.elemTextarea.style.display === 'none') {
+                this.elemTextarea.style.display = null;
+            }
+
+            elemTextarea.value =
+                (elemTextarea.value !== '' ? elemTextarea.value + '\n\n' : '')
+                + `-> ${this._getNowTimeStampingUtc()}\n${txt}`
+            ;
+            elemTextarea.scrollTo(0, elemTextarea.scrollHeight);
+        }
+
+        _getNowTimeStampingUtc() {
+            let assignDate = new Date();
+            var timezoneOffset = assignDate.getTimezoneOffset();
+            let timeMsUtc = +assignDate + timezoneOffset * 60000;
+            let dateUtc = new Date(timeMsUtc);
+            return this._setLengthNum(dateUtc.getFullYear(), 4)
+                + '-' + this._setLengthNum(dateUtc.getMonth() + 1, 2)
+                + '-' + this._setLengthNum(dateUtc.getDate(), 2)
+                + ' ' + this._setLengthNum(dateUtc.getHours(), 2)
+                + ':' + this._setLengthNum(dateUtc.getMinutes(), 2)
+                + ':' + this._setLengthNum(dateUtc.getSeconds(), 2)
+                + '.' + this._setLengthNum(dateUtc.getMilliseconds(), 3)
+            ;
+        }
+
+        _setLengthNum(numChoA, length) {
+            let strChoA = numChoA.toString();
+            let loop = length - strChoA.length;
+            let addStr = '';
+            for (; loop > 0 ; loop--) addStr += '0';
+            return addStr + strChoA;
+        }
+    }
+
     (_ => {
         const helPaperSlipStatus = document.querySelector('.cGetParticipants_status');
         const helGetParticipantsStatus = document.querySelector('.cGetParticipants_status');
@@ -566,6 +614,8 @@
             })
         ;
 
+        let logRecord = new LogRecord();
+
         wsMethodBox['adTool.tuckUser']
             = wsMethodBox['adTool.tuckUserAction']
             = function (err, result) {
@@ -579,6 +629,7 @@
                     console.error('adTool.tuckUser', result);
                 }
                 helTuckUserStatus.innerText = result.message;
+                logRecord.push(result.message);
             }
         ;
         let _regexWord = /\w/;
@@ -596,6 +647,9 @@
                     alert('請填寫群組 ID');
                     return;
                 }
+
+                logRecord.push('已送出拉人入群請求');
+
                 ws.send(JSON.stringify({wsId, fns: [{
                     randId: getRandomId(),
                     name: 'adTool.tuckUser',
@@ -635,6 +689,8 @@
             })
         ;
 
+        let logRecord = new LogRecord();
+
         wsMethodBox['adTool.paperSlip']
             = wsMethodBox['adTool.paperSlipAction']
             = function (err, result) {
@@ -648,6 +704,7 @@
                     console.error('adTool.paperSlip', result);
                 }
                 helPaperSlipStatus.innerText = result.message;
+                logRecord.push(result.message);
             }
         ;
         let _regexWord = /\w/;
@@ -665,6 +722,9 @@
                     alert('來源鏈結格式錯誤');
                     return;
                 }
+
+                logRecord.push('已送出廣告炸群請求');
+
                 ws.send(JSON.stringify({wsId, fns: [{
                     randId: getRandomId(),
                     name: 'adTool.paperSlip',
