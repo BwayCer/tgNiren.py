@@ -113,7 +113,7 @@ class _WsHouse():
     def addChannel(self,
             task: asyncio.Task,
             pageId: str,
-            socket: quart.wrappers.request.Websocket) -> str:
+            socket: quart.wrappers.Websocket) -> str:
         key = self.channelCache.register(data = {
             'task': task,
             'pageId': pageId,
