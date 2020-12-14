@@ -18,6 +18,11 @@ _pyTool = {
 }
 
 if len(_origArgs) == 1:
+    print('command list:')
+    for name in _pyTool:
+        print('  => {}: {}'.format(name, _pyTool[name]))
+
+    print()
     raise Exception('[tool]: Not found command.')
 elif _origArgs[1] in '--router':
     for name in _pyTool:

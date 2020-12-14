@@ -7,7 +7,7 @@ import datetime
 import random
 import asyncio
 import contextlib
-import telethon.sync as telethon
+import telethon as telethon
 import utils.chanData
 import utils.novice as novice
 import tgkream.errors as errors
@@ -491,12 +491,12 @@ class TgBaseTool(_TgNiUsers):
             groupPeer: str,
             offset: int = 0,
             ynRealUser: bool = True,
-            excludedUserList: list = [],
+            excludedUserList: typing.Tuple[None, list] = None,
             amount: int = 200000) -> typing.Tuple[int, list]:
         # 每次請求用戶數
         pageAmount = amount * 2 + 10 # 估值 猜想排除的用戶數
         pageAmount = pageAmount if pageAmount < 100 else 100
-        ynHasExcludedUsers = len(excludedUserList) != 0,
+        isHasExcludedUsers = excludedUserList != None and len(excludedUserList) != 0
         pickIdx = pickRealIdx = offset
         channelParticipantsSearch = telethon.types.ChannelParticipantsSearch(q = '')
 
@@ -524,7 +524,7 @@ class TgBaseTool(_TgNiUsers):
                 if ynRealUser and (user.is_self or user.deleted or user.bot):
                     continue
                 # 排除欲除外用戶
-                if ynHasExcludedUsers \
+                if isHasExcludedUsers \
                         and novice.indexOf(excludedUserList, user.id) != -1:
                     continue
                 # 排除仿用戶
