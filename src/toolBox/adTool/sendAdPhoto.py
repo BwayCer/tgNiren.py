@@ -151,7 +151,6 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
                     idx += 1
                     bandNiUserList.append(myId)
 
-
         latestStatus += ' ({})'.format(
             '仿用戶用盡' if len(bandNiUserList) == usedClientCount else '結束'
         )
