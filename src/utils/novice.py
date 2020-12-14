@@ -26,7 +26,7 @@ class LogNeedle():
     def push(self, text: str) -> None:
         print(text)
         logTxt = '-~@~- {}\n{}\n\n'.format(
-            dateStringify(dateNow()),
+            dateUtcStringify(dateUtcNow()),
             text
         )
         with open(_logFilePath, 'a', encoding = 'utf-8') as fs:
@@ -83,7 +83,7 @@ def sysTracebackException(
     txt = '{} Error: {}'.format(exc_type, exc_obj)
 
     if ysHasTimestamp:
-        txt += '\n  Timestamp: {}'.format(dateStringify(dateNow()))
+        txt += '\n  Timestamp: {}'.format(dateUtcStringify(dateUtcNow()))
 
     txt += '\n  Traceback:'
     # idx == 0 是指向此 wrapTryCatch 函式
@@ -106,26 +106,40 @@ def indexOf(target: typing.Union[str, list], index, *args) -> int:
         return -1
 
 
-def dateTimestamp(dt: datetime.datetime) -> int:
-    # 不管是 UTC 或者本地時間所返回的毫秒數都是相對本地時間的毫秒數
-    # datetime.datetime.now(datetime.timezone.utc).timestamp()
-    # datetime.datetime.now().timestamp()
-    localDtstamp = int(dt.timestamp() * 1000)
-    utcDtstamp = localDtstamp + (time.timezone * 1000)
-    return utcDtstamp
-
-def dateStringify(dt: datetime.datetime) -> str:
-    dtMs = dateTimestamp(dt)
-    dtstamp = dtMs / 1000
-    return datetime.datetime.fromtimestamp(dtstamp).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-    # return datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).isoformat()
-
 def dateNow() -> datetime.datetime:
     return datetime.datetime.now()
 
-def dateNowAfter(*args, **kwargs) -> datetime.datetime:
-    return datetime.datetime.now() + datetime.timedelta(*args, **kwargs)
+def dateNowOffset(
+        dt: typing.Union[None, datetime.datetime] = None,
+        *args, **kwargs) -> datetime.datetime:
+    if type(dt) != datetime.datetime:
+        dt = dateNow()
+    return dt + datetime.timedelta(*args, **kwargs)
 
-def dateNowTimestamp() -> int:
-    return dateTimestamp(dateNow())
+def dateUtcNow() -> datetime.datetime:
+    return datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+
+def dateUtcNowOffset(
+        dt: typing.Union[None, datetime.datetime] = None,
+        *args, **kwargs) -> datetime.datetime:
+    if type(dt) != datetime.datetime:
+        dt = dateUtcNow()
+    return dt + datetime.timedelta(*args, **kwargs)
+
+def dateUtcTimestamp(dt: datetime.datetime) -> int:
+    # `datetime.timestamp()` = 給定日期時間 - 給定時區偏移量 + 本地時區偏移量
+    # 時區範例如 `tzinfo = datetime.timezone.utc`
+    return int(dt.timestamp() + time.timezone) * 1000
+
+def dateUtcNowTimestamp() -> int:
+    return dateUtcTimestamp(dateUtcNow())
+
+def dateUtcNowOffsetTimestamp(*args, **kwargs) -> int:
+    return dateUtcTimestamp(dateUtcNowOffset(*args, **kwargs))
+
+def dateUtcStringify(dt: datetime.datetime) -> str:
+    dtMs = dateUtcTimestamp(dt)
+    dtstamp = dtMs / 1000
+    return datetime.datetime.fromtimestamp(dtstamp).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    # return datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).isoformat()
 

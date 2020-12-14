@@ -72,7 +72,7 @@ class _InnerSession():
     # TODO 看能不能改成計時器執行
     def _expiredCheck(self) -> None:
         sessionData = self._data
-        nowTimeMs = novice.dateNowTimestamp()
+        nowTimeMs = novice.dateUtcNowTimestamp()
         for key in list(sessionData):
             pageData = sessionData[key]
             if pageData['expiryTimestamp'] < nowTimeMs:
@@ -89,9 +89,9 @@ class _InnerSession():
     def open(self, pageSession: dict) -> str:
         self._expiredCheck()
         pageId = self._getNewId()
-        expiryDate = novice.dateNowAfter(hours = self._extensionHours)
+        expiryDate = novice.dateNowOffset(hours = self._extensionHours)
         self._data[pageId] = {
-            'expiryTimestamp': novice.dateTimestamp(expiryDate),
+            'expiryTimestamp': novice.dateUtcTimestamp(expiryDate),
             'data': pageSession,
         }
         return pageId
@@ -103,8 +103,8 @@ class _InnerSession():
         sessionData = self._data
         if pageId in sessionData:
             pageData = sessionData[pageId]
-            expiryDate = novice.dateNowAfter(hours = self._extensionHours)
-            pageData['expiryTimestamp'] = novice.dateTimestamp(expiryDate)
+            expiryDate = novice.dateNowOffset(hours = self._extensionHours)
+            pageData['expiryTimestamp'] = novice.dateUtcTimestamp(expiryDate)
             return pageData['data']
 
         return None

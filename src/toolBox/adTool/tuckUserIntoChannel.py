@@ -48,7 +48,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
             print('-=-')
             print("FloodWaitError: wait {} seconds.".format(waitTimeSec))
             print('-=-')
-            maturityDate = utils.novice.dateNowAfter(seconds = waitTimeSec)
+            maturityDate = utils.novice.dateNowOffset(seconds = waitTimeSec)
             tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
             bandNiUserList.append(myId)
         except telethon.errors.PeerFloodError as err:
@@ -60,7 +60,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
                 '[tuckUserIntoChannel]: The +{} phone Get PeerFloodError'.format(myId)
             )
             # TODO 12 小時只是估計值
-            maturityDate = utils.novice.dateNowAfter(hours = 12)
+            maturityDate = utils.novice.dateNowOffset(hours = 12)
             tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
             bandNiUserList.append(myId)
         except telethon.errors.UserChannelsTooMuchError as err:

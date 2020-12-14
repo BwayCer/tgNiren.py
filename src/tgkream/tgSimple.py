@@ -78,16 +78,16 @@ class TgSimple(TgSession):
         return random.randrange(1000000, 9999999)
 
     async def iterLoopInterval(self, length: int, circleInterval: float = 1) -> None:
-        prevTimeMs = novice.dateNowTimestamp()
+        prevTimeMs = novice.dateUtcNowTimestamp()
         idxLoop = 0
         while True:
             if circleInterval > 0 and idxLoop != 0:
-                nowTimeMs = novice.dateNowTimestamp()
+                nowTimeMs = novice.dateUtcNowTimestamp()
                 intervalTimeMs = circleInterval - ((nowTimeMs - prevTimeMs) / 1000)
                 if intervalTimeMs > 0:
                     print('wait {} second'.format(intervalTimeMs))
                     await asyncio.sleep(intervalTimeMs)
-                    prevTimeMs = novice.dateNowTimestamp()
+                    prevTimeMs = novice.dateUtcNowTimestamp()
                 else:
                     prevTimeMs = nowTimeMs
 

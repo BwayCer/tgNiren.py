@@ -129,7 +129,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                         runId, myId
                     )
                 )
-                maturityDate = novice.dateNowAfter(days = 30)
+                maturityDate = novice.dateNowOffset(days = 30)
                 tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
                 bandNiUserList.append(myId)
             except telethon.errors.FloodWaitError as err:
@@ -143,7 +143,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                 if waitTimeSec < 180:
                     await asyncio.sleep(waitTimeSec)
                 else:
-                    maturityDate = novice.dateNowAfter(seconds = waitTimeSec)
+                    maturityDate = novice.dateNowOffset(seconds = waitTimeSec)
                     tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
                     bandNiUserList.append(myId)
             except telethon.errors.PeerFloodError as err:
@@ -152,7 +152,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
                     '(runId: {}) {} get PeerFloodError: wait 12 hour.'.format(runId, myId)
                 )
                 # TODO 12 小時只是估計值
-                maturityDate = novice.dateNowAfter(hours = 12)
+                maturityDate = novice.dateNowOffset(hours = 12)
                 tgTool.chanDataNiUsers.pushBandData(myId, maturityDate)
                 bandNiUserList.append(myId)
             except Exception as err:

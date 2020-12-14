@@ -47,7 +47,7 @@ class _TgChanData_NiUsers(TgSession):
             return
 
         bands = niUsers['bandList']
-        nowTimeMs = novice.dateNowTimestamp()
+        nowTimeMs = novice.dateUtcNowTimestamp()
         for idx in range(bandInfosLength - 1, -1, -1):
             bandInfo = bandInfos[idx]
             if bandInfo['bannedWaitTimeMs'] < nowTimeMs:
@@ -101,8 +101,8 @@ class _TgChanData_NiUsers(TgSession):
             bands.append(phoneNumber)
             niUsers['bandInfos'].append({
                 'id': phoneNumber,
-                'bannedWaitDate': novice.dateStringify(dt),
-                'bannedWaitTimeMs': novice.dateTimestamp(dt)
+                'bannedWaitDate': novice.dateUtcStringify(dt),
+                'bannedWaitTimeMs': novice.dateUtcTimestamp(dt)
             })
         return False
 
@@ -398,18 +398,18 @@ class _TgNiUsers():
         clientInfoListLength = len(clientInfoList)
         maxLoopTimes = clientInfoListLength * circleLimit if circleLimit != -1 else -1
 
-        prevTimeMs = novice.dateNowTimestamp()
+        prevTimeMs = novice.dateUtcNowTimestamp()
         idxLoop = 0
         while True:
             pickIdx = idxLoop % clientInfoListLength
 
             if circleInterval > 0 and idxLoop != 0 and pickIdx == 0:
-                nowTimeMs = novice.dateNowTimestamp()
+                nowTimeMs = novice.dateUtcNowTimestamp()
                 intervalTimeMs = circleInterval - ((nowTimeMs - prevTimeMs) / 1000)
                 if intervalTimeMs > 0:
                     print('wait {} second'.format(intervalTimeMs))
                     await asyncio.sleep(intervalTimeMs)
-                    prevTimeMs = novice.dateNowTimestamp()
+                    prevTimeMs = novice.dateUtcNowTimestamp()
                 else:
                     prevTimeMs = nowTimeMs
 

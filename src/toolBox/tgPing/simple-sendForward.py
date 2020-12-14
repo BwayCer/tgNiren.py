@@ -51,7 +51,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         readableIdx = idx + 1
         forwardPeer = userPeers[idx]
         print('--> {} {}/{}: {} -> {}'.format(
-            novice.dateStringify(novice.dateNow()),
+            novice.dateUtcStringify(novice.dateNow()),
             readableIdx, loopTimes, phoneNumber, forwardPeer
         ))
 
