@@ -719,7 +719,7 @@
                 }
                 let matchSourceLinkTxt = helFormSourceLink.value.match(_regexSourceLink);
                 if (matchSourceLinkTxt === null) {
-                    alert('來源鏈結格式錯誤');
+                    alert('訊息鏈結格式錯誤');
                     return;
                 }
 
@@ -736,6 +736,74 @@
                 }]}));
             })
         ;
+    })();
+
+    (_ => {
+        const helPaperSlipStatus = document.querySelector('.cPaperSlipToActiveUser_status');
+        const helFormRoomId = document.querySelector('.cPaperSlipToActiveUser_form_roomId > .markInput');
+        const helFormOffsetDays = document.querySelector('.cPaperSlipToActiveUser_form_offsetDays > .markInput');
+        const helFormUsedNiUserCount = document.querySelector('.cPaperSlipToActiveUser_form_usedNiUserCount > .markInput');
+        const helFormSourceLink = document.querySelector('.cPaperSlipToActiveUser_form_sourceLink > .markInput');
+
+        const helFormSubmitBtn = document.querySelector('.cPaperSlipToActiveUser_form_submit');
+
+        let logRecord = new LogRecord();
+
+        wsMethodBox['adTool.paperSlipToActiveUser']
+            = wsMethodBox['adTool.paperSlipToActiveUserAction']
+            = function (err, result) {
+                if (err) {
+                    console.error(`${err.name}: ${err.message}`);
+                    helPaperSlipStatus.innerText = err.message;
+                    return;
+                }
+
+                if (result.code < 0) {
+                    console.error('adTool.paperSlipToActiveUser', result);
+                }
+                helPaperSlipStatus.innerText = result.message;
+                logRecord.push(result.message);
+            }
+        ;
+        let _regexWord = /\w/;
+        let _regexSourceLink = /^https:\/\/t\.me\/([^\/]+)\/(\d+)$/;
+        helFormSubmitBtn.addEventListener('click', async function (evt) {
+            evt.preventDefault();
+            let roomIdTxt = helFormRoomId.value;
+            if (!_regexWord.test(roomIdTxt)) {
+                alert('請填寫用戶/群組 ID');
+                return;
+            }
+            let offsetDaysNum = Number(helFormOffsetDays.value);
+            if (!(offsetDaysNum > 0)) {
+                alert('請填寫過濾期間 (其值須大於 0)');
+                return;
+            }
+            let usedNiUserCountNum = Number(helFormUsedNiUserCount.value);
+            if (!(usedNiUserCountNum > 0)) {
+                alert('請填寫仿用戶的使用量 (其值須大於 0)');
+                return;
+            }
+            let matchSourceLinkTxt = helFormSourceLink.value.match(_regexSourceLink);
+            if (matchSourceLinkTxt === null) {
+                alert('訊息鏈結格式錯誤');
+                return;
+            }
+
+            logRecord.push('已送出廣告炸群 (活躍用戶) 請求');
+
+            ws.send(JSON.stringify({wsId, fns: [{
+                randId: getRandomId(),
+                name: 'adTool.paperSlipToActiveUser',
+                prop: {
+                    groupPeer: roomIdTxt,
+                    offsetDays: offsetDaysNum,
+                    usedNiUserCount: usedNiUserCountNum,
+                    forwardMessageGroup: matchSourceLinkTxt[1],
+                    forwardMessageId: parseInt(matchSourceLinkTxt[2]),
+                },
+            }]}));
+        });
     })();
 })();
 

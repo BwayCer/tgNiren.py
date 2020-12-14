@@ -84,6 +84,10 @@ body {
   }
 }
 
+.cPaperSlipToActiveUser {
+  @include scSectionItem;
+}
+
 .cLogin {
   @include scSectionItem;
 

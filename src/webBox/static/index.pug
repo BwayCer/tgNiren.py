@@ -77,12 +77,43 @@ html
             )
             | ）
         .cPaperSlip_form_sourceLink
-          span 被轉發的群組來源 ID：
+          span 被轉發的訊息鏈結：
           input.markInput(
             type="text"
-            placeholder="被轉發的來源鏈結"
+            placeholder="被轉發的訊息鏈結"
           )
         button.cPaperSlip_form_submit
+          span 送出
+    section.cPaperSlipToActiveUser
+      .cPaperSlipToActiveUser_title
+        span 廣告炸群 (活躍用戶)
+      .cPaperSlipToActiveUser_status
+      form.cPaperSlipToActiveUser_form
+        .cPaperSlipToActiveUser_form_roomId
+          span 轉發對象的群組 ID：
+          input.markInput(
+            type="text"
+            placeholder="群組 ID"
+          )
+        .cPaperSlipToActiveUser_form_offsetDays
+          span 過濾期間：
+          input.markInput(
+            type="number"
+            value="7"
+          )
+        .cPaperSlipToActiveUser_form_usedNiUserCount
+          span 仿用戶的使用量：
+          input.markInput(
+            type="number"
+            value="1"
+          )
+        .cPaperSlipToActiveUser_form_sourceLink
+          span 被轉發的訊息鏈結：
+          input.markInput(
+            type="text"
+            placeholder="被轉發的訊息鏈結"
+          )
+        button.cPaperSlipToActiveUser_form_submit
           span 送出
     section.cLogin
       .cLogin_title

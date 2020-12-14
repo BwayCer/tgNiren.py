@@ -672,9 +672,10 @@ class TgBaseTool(_TgNiUsers):
 
             resultMessages = result.messages
             messagesLength = len(resultMessages)
-            resultLastMessage = resultMessages[messagesLength - 1]
             if messagesLength == 0:
                 break
+
+            resultLastMessage = resultMessages[messagesLength - 1]
             print(
                 f'  {resultMessages[0].id}({resultMessages[0].date})'
                 f' ~ {resultLastMessage.id}({resultLastMessage.date})'

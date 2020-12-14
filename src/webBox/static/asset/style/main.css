@@ -93,6 +93,27 @@ body {
   vertical-align: middle;
 }
 
+.cPaperSlipToActiveUser {
+  padding: 1em;
+}
+.cPaperSlipToActiveUser_title {
+  margin: 0.6em 0 1em;
+}
+.cPaperSlipToActiveUser_title span {
+  font-size: 1.4em;
+}
+.cPaperSlipToActiveUser_status {
+  margin: 1em 0.4em;
+}
+.cPaperSlipToActiveUser_form > * {
+  margin: 0.4em;
+  display: block;
+}
+.cPaperSlipToActiveUser_form > * .markInput {
+  margin-left: 1em;
+  padding: 0.2em;
+}
+
 .cLogin {
   padding: 1em;
 }

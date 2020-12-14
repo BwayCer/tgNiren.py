@@ -8,6 +8,7 @@ _origArgs = sys.argv
 _pyTool = {
     'adTool.sendAdPhoto': 'adTool/sendAdPhoto',
     'adTool.getParticipants': 'adTool/getParticipants',
+    'adTool.sendMessageActiveUser': 'adTool/sendMessageActiveUser',
     'adTool.tuckUserIntoChannel': 'adTool/tuckUserIntoChannel',
     'adTool.tuckUserIntoChannelByUserList': 'adTool/tuckUserIntoChannelByUserList',
     'tgPing.interactiveLogin.simple': 'tgPing/simple-interactiveLogin',
