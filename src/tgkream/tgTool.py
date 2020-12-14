@@ -445,23 +445,71 @@ class TgBaseTool(_TgNiUsers):
     def getRandId(self):
         return random.randrange(1000000, 9999999)
 
-    # TgTypeing.Peer
-    async def getPeerTypeName(self, peer: TgTypeing.AutoInputPeer) -> str:
+    # NOTE:
+    # 1. 不存在的聊天室會報錯
+    # 2. 私有聊天室若未參加會報錯
+    async def parsePeer(self,
+            peer:  typing.Union[
+                str,
+                telethon.types.Chat,
+                telethon.types.User,
+                telethon.types.Channel,
+            ]) -> dict:
+        # NOTE:
+        # 1. 一開始建立的群組為 `telethon.types.Chat` 類型，
+        #    當更改為公開群組之後則為 `telethon.types.Channel` 類型，並固定下來。
+        #    (補充: 可能使用 `get_input_entity()` 會判斷錯誤，建議使用 `get_entity()`)
+
         if type(peer) == str:
             client = self.pickCurrentClient()['client']
-            inputPeer = await client.get_entity(peer)
+            entity = await client.get_entity(peer)
         else:
-            inputPeer = peer
+            entity = peer
 
-        inputPeerType = type(inputPeer)
-        if inputPeerType == telethon.types.Chat:
-            inputPeerTypeName = 'Chat'
-        elif inputPeerType == telethon.types.User:
-            inputPeerTypeName = 'User'
-        elif inputPeerType == telethon.types.Channel:
-            inputPeerTypeName = 'Channel'
+        # NOTE:
+        # 已知的 type(entity) 為
+        #   telethon.types.Chat
+        #   telethon.types.User
+        #   telethon.types.Channel
+        entityTypeName = entity.__class__.__name__
+        isUserSet = entityTypeName == 'User'
+        isBot = isUserSet and entity.bot
 
-        return inputPeerTypeName
+        if isUserSet:
+            name = entity.first_name if entity.first_name != None else '---'
+            if entity.last_name != None:
+                name += ' ' + entity.last_name
+        else:
+            name = entity.title
+
+        if entityTypeName == 'Chat':
+            isGroups = True
+            username = None
+        else:
+            isGroups = not isUserSet and entity.megagroup
+            username = entity.username
+
+        chatTypeName = 'Bot' if isBot else \
+            'Group' if isGroups else \
+            'User' if isUserSet else \
+            'Channel'
+
+        return {
+            'id': entity.id,
+            'accessHash': entity.access_hash \
+                if hasattr(entity, 'access_hash') else None,
+            'name': name,
+            'username': username,
+            'isHideUsername': username == None,
+            'entityTypeName': entityTypeName,
+            'chatTypeName': chatTypeName,
+            'isUserSet': isUserSet,
+            'isChannelSet': not isUserSet,
+            'isUser': isUserSet and not isBot,
+            'isBot': isBot,
+            'isChannel': not isUserSet and not isGroups,
+            'isGroup': isGroups,
+        }
 
     def joinGroup(self,
             client: TelegramClient,
@@ -546,4 +594,120 @@ class TgBaseTool(_TgNiUsers):
             pickIdx += pageAmount
 
         return (pickRealIdx, users)
+
+    async def getSpeakers(self,
+            client: TelegramClient,
+            groupPeer: str,
+            offsetDays: float,
+            ynRealUser: bool = True,
+            excludedUserList: typing.Tuple[None, list] = None,
+            amount: typing.Tuple[None, int] = None) -> typing.List[telethon.types.User]:
+        # `offsetDays`, `amount` 有效值須大於 0
+        if offsetDays <= 0 or (amount != None and amount <= 0):
+            return []
+
+        isHasExcludedUsers = excludedUserList != None and len(excludedUserList) != 0
+        isHasAmount = amount != None
+        theDt = novice.dateUtcNowOffset(days = -1 * offsetDays)
+
+        # NOTE: 關於 `GetHistoryRequest()` 方法
+        # https://core.telegram.org/method/messages.getHistory
+        # https://tl.telethon.dev/methods/messages/get_history.html
+        # 1. 當對象為用戶時，沒有訊息?! (2020.11.23 紀錄)
+        # 關於參數值：
+        #   1. `offset_id`, `add_offset` 用於選取在特定訊息前或後的訊息，不使用則傳入 `0`。
+        #   2. `offset_date`, `max_id`, `min_id` 用於選取在特定範圍內的訊息
+        #      注意！ 感覺是先使用 `offset_date` 和 `limit` 先選定範圍，
+        #      再篩選符合的 `max_id`, `min_id` 的項目，
+        #      所以當 `offset_date` 不變的情況下，取得訊息的數量只會越來越少。
+        #   3. `offset_date` 若傳入 `0|None`，則預設為當前時間。
+        #   4. Telegram 時間為 UTC 時間。
+        # 關於回傳值：
+        #   https://core.telegram.org/constructor/messages.channelMessages
+        #   1. `count` 為該聊天室紀錄於服務端的總訊息比數。
+        #      (但可能不完全紀錄於服務端 ?! (官方說的))
+        #   2. 回傳的訊息是依時間倒序排序的。
+        #   3. `chats`, `users` 中包含 `messages` 所提到的對象 (ex: 轉傳的訊息對象也在裡面)
+        #   4. `limit` 最多為 100 則。 (2020.11.23 紀錄)
+
+        result = await client(telethon.functions.messages.GetHistoryRequest(
+            peer = groupPeer,
+            offset_id = 0,
+            offset_date = theDt,
+            add_offset = 0,
+            limit = 1,
+            max_id = 0,
+            min_id = 0,
+            hash = 0
+        ))
+        oldMsgId = result.messages[0].id if len(result.messages) > 0 else 1
+
+        isBleak = False
+        currDate = None
+        currMinMsgId = 0
+        userList = []
+        speakerList = []
+        while True:
+            result = await client(telethon.functions.messages.GetHistoryRequest(
+                peer = groupPeer,
+                offset_id = 0,
+                offset_date = currDate,
+                add_offset = 0,
+                limit = 100,
+                max_id = currMinMsgId,
+                min_id = oldMsgId,
+                hash = 0
+            ))
+            resultType = type(result)
+            if resultType == telethon.types.messages.MessagesNotModified:
+                print(f'type: {resultType}, count: {result.count}')
+                break
+            print(
+                f'type: {resultType},'
+                f' count: {result.count if hasattr(result, "count") else "---"},'
+                f' messages: {len(result.messages)},'
+                f' chats: {len(result.chats)},'
+                f' users: {len(result.users)}'
+            )
+
+            resultMessages = result.messages
+            messagesLength = len(resultMessages)
+            resultLastMessage = resultMessages[messagesLength - 1]
+            if messagesLength == 0:
+                break
+            print(
+                f'  {resultMessages[0].id}({resultMessages[0].date})'
+                f' ~ {resultLastMessage.id}({resultLastMessage.date})'
+            )
+
+            for user in result.users:
+                # 排除 自己, 已刪除帳號, 機器人
+                if ynRealUser and (user.is_self or user.deleted or user.bot):
+                    continue
+                # 排除欲除外用戶
+                if isHasExcludedUsers and user.id in excludedUserList:
+                    continue
+                # 排除仿用戶
+                if self.lookforClientInfo(user.id) != None:
+                    continue
+
+                # 過濾已抓取的
+                if user.id in userList:
+                    continue
+
+                userList.append(user.id)
+                speakerList.append(user)
+
+                if isHasAmount and len(speakerList) >= amount:
+                    isBleak = True
+                    break
+            print(f'  get {len(result.users)} users -> {len(speakerList)}')
+
+            if isBleak:
+                break
+
+            currDate = resultLastMessage.date
+            currMinMsgId = resultLastMessage.id
+
+        return speakerList
 
