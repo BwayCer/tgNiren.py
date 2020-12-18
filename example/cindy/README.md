@@ -17,11 +17,16 @@
 
 ```
 # 把辛蒂提供的資料轉 JSON
-pipenv run ./src/tool.py modemPool.cindy txtToJson ./example/cindy/modemCardTable.txt
-cat ./example/cindy/modemCardTable.txt.json
+pipenv run ./src/tool.py modemPool.cindy add ./example/cindy/modemCardTable.txt
+cat ./src/env/modemPoolData.json
+
+# 掃描可用的電話號碼 (包含是否收得到簡訊)
+pipenv run ./src/tool.py modemPool.cindy smsScan [需求數量 (n > 0)]
 
 # 自動註冊 Telegram 並加入指定群組
-pipenv run ./src/tool.py modemPool.cindy autoLogin \
-    ./example/cindy/modemCardTable.txt.json <TG 群組識別碼> <仿用戶中間名>
+pipenv run ./src/tool.py modemPool.cindy autoSignUp <TG 群組識別碼> [<需求數量 (n > 0)> [仿用戶中間名]]
+
+# 檢查仿用戶狀態
+pipenv run ./src/tool.py modemPool.cindy checkOk
 ```
 
