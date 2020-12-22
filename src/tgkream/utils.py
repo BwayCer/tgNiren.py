@@ -79,10 +79,11 @@ class TgSession():
 
 
 def TgDefaultInit(TgClass, *args, **kwargs):
-    apiId = novice.py_env['apiId']
+    tgAppMain = novice.py_env['tgApp']['main']
+    apiId = tgAppMain['apiId']
     return TgClass(
         apiId,
-        novice.py_env['apiHash'],
+        tgAppMain['apiHash'],
         sessionPrifix = 'telethon-' + str(apiId),
         *args, **kwargs
     )

@@ -15,11 +15,12 @@ import utils.json
 
 py_dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
 
-py_env = None
-if os.path.exists(py_dirname + '/envfile/env.yml'):
-    py_env = utils.json.loadYml(py_dirname + '/envfile/env.yml')
-
-_logFilePath = py_dirname + '/' + py_env['logFilePath']
+py_envDirname = py_dirname + '/envfile'
+if os.path.exists(py_envDirname + '/env.yml'):
+    py_env = utils.json.loadYml(py_envDirname + '/env.yml')
+    _logFilePath = py_dirname + '/' + py_env['logFilePath']
+else:
+    raise Exception(f'找不到 {py_envDirname}/env.yml 環境文件。')
 
 
 class LogNeedle():

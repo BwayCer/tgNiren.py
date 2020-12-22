@@ -19,7 +19,8 @@ __all__ = ['login', 'sendCode', 'verifiedCode', 'verifiedPassword', 'deleteAccou
 
 
 TelegramClient = telethon.TelegramClient
-tgSession = TgSession('telethon-' + str(novice.py_env['apiId']))
+_tgAppMain = novice.py_env['tgApp']['main']
+tgSession = TgSession('telethon-' + str(_tgAppMain['apiId']))
 
 
 async def login(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
@@ -169,8 +170,8 @@ async def _qrLoginAction(pageId: str, runIdCode: str, info: dict):
     try:
         exportLoginTokenResult = await client(
             telethon.functions.auth.ExportLoginTokenRequest(
-                api_id = novice.py_env['apiId'],
-                api_hash = novice.py_env['apiHash'],
+                api_id = _tgAppMain['apiId'],
+                api_hash = _tgAppMain['apiHash'],
                 except_ids = []
             )
         )
@@ -225,8 +226,8 @@ async def _qrLoginAction(pageId: str, runIdCode: str, info: dict):
         try:
             exportLoginTokenResult = await client(
                 telethon.functions.auth.ExportLoginTokenRequest(
-                    api_id = novice.py_env['apiId'],
-                    api_hash = novice.py_env['apiHash'],
+                    api_id = _tgAppMain['apiId'],
+                    api_hash = _tgAppMain['apiHash'],
                     except_ids = []
                 )
             )
@@ -964,8 +965,8 @@ async def _checkConnectClient(
             addPrifix = tgSessionAddPrifix,
             noExt = True
         ),
-        novice.py_env['apiId'],
-        novice.py_env['apiHash']
+        _tgAppMain['apiId'],
+        _tgAppMain['apiHash']
     )
 
     try:
