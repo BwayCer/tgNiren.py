@@ -805,5 +805,103 @@
             }]}));
         });
     })();
+
+    (_ => {
+        const helRaiseCatsStatus = document.querySelector('.cRaiseCats_status');
+        const helFromModemCardsTxt = document.querySelector('.cRaiseCats_form_modemCardsTxt > .markInput');
+
+        const helFormSubmitBtn = document.querySelector('.cRaiseCats_form_submit');
+
+        helFromModemCardsTxt.addEventListener('change', async function (evt) {
+            const file = this.files[0];
+            if (file === null || file.name.substr(-4) !== '.txt') {
+                alert('請提供 txt 文件');
+                return;
+            }
+        });
+
+        let logRecord = new LogRecord();
+
+        wsMethodBox['cindy.add']
+            = function (err, result) {
+                if (err) {
+                    console.error(`${err.name}: ${err.message}`);
+                    helRaiseCatsStatus.innerText = err.message;
+                    return;
+                }
+
+                if (result.code < 0) {
+                    console.error('cindy.add', result);
+                }
+                helRaiseCatsStatus.innerText = result.message;
+                logRecord.push(result.message);
+            }
+        ;
+        helFormSubmitBtn.addEventListener('click', async function (evt) {
+            evt.preventDefault();
+
+            let file = helFromModemCardsTxt.files.length > 0
+                ? helFromModemCardsTxt.files[0]
+                : null
+            ;
+            if (file === null || file.name.substr(-4) !== '.txt') {
+                alert('請提供 txt 文件');
+                return;
+            }
+
+            let modemCardsTxt = await file.text();
+
+            logRecord.push('已送出加入新貓請求');
+
+            ws.send(JSON.stringify({wsId, fns: [{
+                randId: getRandomId(),
+                name: 'cindy.add',
+                prop: {modemCardsTxt},
+            }]}));
+        });
+    })();
+
+    (_ => {
+        const helAutoSignUpStatus = document.querySelector('.cAutoSignUp_status');
+        const helFromNeedCount = document.querySelector('.cAutoSignUp_form_needCount > .markInput');
+
+        const helFormSubmitBtn = document.querySelector('.cAutoSignUp_form_submit');
+
+        let logRecord = new LogRecord();
+
+        wsMethodBox['cindy.autoSignUp']
+            = wsMethodBox['cindy.autoSignUpAction']
+            = function (err, result) {
+                if (err) {
+                    console.error(`${err.name}: ${err.message}`);
+                    helAutoSignUpStatus.innerText = err.message;
+                    return;
+                }
+
+                if (result.code < 0) {
+                    console.error('adTool.autoSignUp', result);
+                }
+                helAutoSignUpStatus.innerText = result.message;
+                logRecord.push(result.message);
+            }
+        ;
+        helFormSubmitBtn.addEventListener('click', async function (evt) {
+            evt.preventDefault();
+
+            let needCount = Number(helFromNeedCount.value);
+            if (!(needCount > 0)) {
+                alert('請填寫需求數量 (其值須大於 0)');
+                return;
+            }
+
+            logRecord.push('已送出自動註冊請求');
+
+            ws.send(JSON.stringify({wsId, fns: [{
+                randId: getRandomId(),
+                name: 'cindy.autoSignUp',
+                prop: {needCount},
+            }]}));
+        });
+    })();
 })();
 

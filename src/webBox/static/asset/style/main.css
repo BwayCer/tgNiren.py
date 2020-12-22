@@ -141,6 +141,48 @@ body {
   margin: 0 0.4em;
 }
 
+.cRaiseCats {
+  padding: 1em;
+}
+.cRaiseCats_title {
+  margin: 0.6em 0 1em;
+}
+.cRaiseCats_title span {
+  font-size: 1.4em;
+}
+.cRaiseCats_status {
+  margin: 1em 0.4em;
+}
+.cRaiseCats_form > * {
+  margin: 0.4em;
+  display: block;
+}
+.cRaiseCats_form > * .markInput {
+  margin-left: 1em;
+  padding: 0.2em;
+}
+
+.cAutoSignUp {
+  padding: 1em;
+}
+.cAutoSignUp_title {
+  margin: 0.6em 0 1em;
+}
+.cAutoSignUp_title span {
+  font-size: 1.4em;
+}
+.cAutoSignUp_status {
+  margin: 1em 0.4em;
+}
+.cAutoSignUp_form > * {
+  margin: 0.4em;
+  display: block;
+}
+.cAutoSignUp_form > * .markInput {
+  margin-left: 1em;
+  padding: 0.2em;
+}
+
 .cLog {
   padding: 1em;
 }

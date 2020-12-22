@@ -106,6 +106,14 @@ body {
   }
 }
 
+.cRaiseCats {
+  @include scSectionItem;
+}
+
+.cAutoSignUp {
+  @include scSectionItem;
+}
+
 .cLog {
   padding: 1em;
 
