@@ -12,6 +12,7 @@ _pyTool = {
     'adTool.tuckUserIntoChannel': 'adTool/tuckUserIntoChannel',
     'adTool.tuckUserIntoChannelByUserList': 'adTool/tuckUserIntoChannelByUserList',
     'tgPing.interactiveLogin.simple': 'tgPing/simple-interactiveLogin',
+    'tgPing.updatePhoto.simple': 'tgPing/simple-updatePhoto',
     'tgPing.activeParticipants.simple': 'tgPing/simple-activeParticipants',
     'tgPing.sendForward.simple': 'tgPing/simple-sendForward',
     'tgPing.highSendMessage.simple': 'tgPing/simple-highSendMessage',

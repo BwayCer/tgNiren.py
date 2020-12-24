@@ -10,7 +10,7 @@ import re
 import random
 import asyncio
 import base64
-import telethon.sync as telethon
+import telethon as telethon
 import tgkream.errors as errors
 import utils.novice as novice
 from tgkream.utils import TgTypeing, TgSession, TgDefaultInit

@@ -21,6 +21,7 @@ __all__ = ['login', 'sendCode', 'verifiedCode', 'verifiedPassword', 'deleteAccou
 TelegramClient = telethon.TelegramClient
 _tgAppMain = novice.py_env['tgApp']['main']
 tgSession = TgSession('telethon-' + str(_tgAppMain['apiId']))
+_photoDirPath = novice.py_dirname + '/' + novice.py_env['modemPool']['photoPath']
 
 
 async def login(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
@@ -735,6 +736,12 @@ async def signup(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
             '',
             phone_code_hash = phoneCodeHash
         )
+
+        files = os.listdir(_photoDirPath)
+        indexStart = random.randrange(0, len(files) - 1)
+        await client(telethon.functions.photos.UploadProfilePhotoRequest(
+            await client.upload_file(_photoDirPath + '/' + files[indexStart])
+        ))
     except Exception as err:
         errTypeName = err.__class__.__name__
         return {

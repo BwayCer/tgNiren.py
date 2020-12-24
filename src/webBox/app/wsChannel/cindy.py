@@ -10,7 +10,7 @@ import datetime
 import re
 import asyncio
 import requests
-import telethon.sync as telethon
+import telethon as telethon
 import utils.json
 import utils.novice as novice
 import webBox.serverMix as serverMix
@@ -28,6 +28,7 @@ _sessionDirPath = novice.py_dirname + '/' + novice.py_env['tgSessionDirPath']
 _envModemPool = novice.py_env['modemPool']
 _modemPoolDataFilePath = novice.py_dirname + '/' + _envModemPool['dataFilePath']
 _nameListFilePath = novice.py_dirname + '/' + _envModemPool['nameListFilePath']
+_photoDirPath = novice.py_dirname + '/' + _envModemPool['photoPath']
 
 _scanTaskMultiple = 3 # 使用需求數的 X 倍數同時掃描
 _scanTaskMax = 20 # 單次同時掃描的最大值
@@ -679,7 +680,6 @@ class TgSignUpTool():
                 lastName,
                 phone_code_hash = phoneCodeHash
             )
-            return self.signUpStatus['OK']
         except telethon.errors.FirstNameInvalidError:
             return self.signUpStatus['FIRSTNAMEINVALID']
         except telethon.errors.PhoneCodeInvalidError:
@@ -700,6 +700,17 @@ class TgSignUpTool():
             return self.connectStete['REGIDGENERATEFAILED']
         except Exception as err:
             return f'from client.sign_up() failed {type(err)} Error: {err}'
+
+        try:
+            files = os.listdir(_photoDirPath)
+            indexStart = random.randrange(0, len(files) - 1)
+            await client(telethon.functions.photos.UploadProfilePhotoRequest(
+                await client.upload_file(_photoDirPath + '/' + files[indexStart])
+            ))
+        except Exception as err:
+            appUtils.console.catchErrorMsg('---', f'{type(err)} Error: {err}')
+
+        return self.signUpStatus['OK']
 
     async def getMyName(self, client: TelegramClient) -> typing.Union[None, str]:
         meInfo = await client.get_me()
