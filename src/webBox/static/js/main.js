@@ -163,6 +163,35 @@
     })();
 
     (_ => {
+        const helRmNiUserStatus = document.querySelector('.cRmNiUser_status');
+
+        const helFormSubmitBtn = document.querySelector('.cRmNiUser_form_submit');
+
+        wsMethodBox['mvNiUser.mvAll']
+            = function (err, result) {
+                if (err) {
+                    console.error(`${err.name}: ${err.message}`);
+                    helRmNiUserStatus.innerText = err.message;
+                    return;
+                }
+
+                helRmNiUserStatus.innerText = result.message;
+            }
+        ;
+        helFormSubmitBtn.addEventListener('click', async function (evt) {
+            evt.preventDefault();
+
+            helRmNiUserStatus.innerText = '請求已送出';
+
+            ws.send(JSON.stringify({wsId, fns: [{
+                randId: getRandomId(),
+                name: 'mvNiUser.mvAll',
+                prop: null,
+            }]}));
+        });
+    })();
+
+    (_ => {
         const helLoginPopStatus = document.querySelector('.cLogin_status');
         const helFormPhone = document.querySelector('.cLogin_form_phone > .markInput');
         const helFormVerifiedCode = document.querySelector('.cLogin_form_verifiedCode > .markInput');

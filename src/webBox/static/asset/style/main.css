@@ -141,6 +141,27 @@ body {
   margin: 0 0.4em;
 }
 
+.cRmNiUser {
+  padding: 1em;
+}
+.cRmNiUser_title {
+  margin: 0.6em 0 1em;
+}
+.cRmNiUser_title span {
+  font-size: 1.4em;
+}
+.cRmNiUser_status {
+  margin: 1em 0.4em;
+}
+.cRmNiUser_form > * {
+  margin: 0.4em;
+  display: block;
+}
+.cRmNiUser_form > * .markInput {
+  margin-left: 1em;
+  padding: 0.2em;
+}
+
 .cRaiseCats {
   padding: 1em;
 }
