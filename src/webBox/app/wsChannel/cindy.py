@@ -133,6 +133,7 @@ async def autoSignUp(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     }
 
 async def _autoSignUpAction(pageId: str, innerSession: dict, data: dict):
+    logName = 'autoSignUpAction'
     try:
         groupPeer = novice.py_env['peers']['niUserChannle']
 
@@ -142,18 +143,16 @@ async def _autoSignUpAction(pageId: str, innerSession: dict, data: dict):
         middleName = ''
 
         modemPoolTable = ModemPoolTable(_modemPoolDataFilePath)
+        modemCardInfos = modemPoolTable.filter(states = ['NEVER', 'TRIED'])
+        canScanCount = len(modemCardInfos)
+        if needCount == None or canScanCount < needCount:
+            needCount = canScanCount
 
-        tgAppNotifyAndCheck = novice.py_env['tgApp']['notifyAndCheck']
-        apiId = tgAppNotifyAndCheck['apiId']
-        scanTgSignUpTool = TgSignUpTool(
-            apiId,
-            tgAppNotifyAndCheck['apiHash'],
-            sessionPrefix = f'{_sessionDirPath}/notifyAndCheck/telethon-{apiId}',
-            sessionAddPrefix = 'scan',
-            confirmTimeoutSec = _config_confirmTimeoutSec,
-            inputTimeoutSec = _config_inputTimeoutSec,
-            requestSmsTimeoutSec = _config_requestSmsTimeoutSec
-        )
+        # 計算單次掃描數量
+        scanTaskAmount = needCount * _scanTaskMultiple
+        scanTaskMax = min(canScanCount, _scanTaskMax)
+        if scanTaskAmount > scanTaskMax:
+            scanTaskAmount = scanTaskMax
 
         tgAppMain = novice.py_env['tgApp']['main']
         apiId = tgAppMain['apiId']
@@ -170,91 +169,94 @@ async def _autoSignUpAction(pageId: str, innerSession: dict, data: dict):
         nameList = utils.json.loadYml(_nameListFilePath)
         randomName = RandomName(nameList, middleName)
 
+        shareStore = {
+            'needCount': needCount,
+            'canScanCount': canScanCount,
+            'scanCount': 0,
+            'successScanCount': 0,
+            'successCount': 0,
+        }
+
+        isGetFloodWaitError = False
         try:
-            currNeedCount = needCount
-            scanLastSuccessCount = 0
-            scanPhones = []
-            singUpInfo = {
-                'needCount': needCount,
-                'successCount': 0,
-            }
-            for loopTimes in range(1, 4):
-                if loopTimes > 1:
-                    await _asyncLogSend(pageId, 'autoSignUpAction', {
-                        'code': 1,
-                        'message': appUtils.console.log(
-                            runIdCode, _cindyAutoSignUpMessage, 'tryAgain', loopTimes
-                        ),
-                    })
+            runTasks = []
+            for modemCardInfo in modemCardInfos:
+                phoneNumber = modemCardInfo['phone']
 
-                scanInfo = await _smsScan(
-                    pageId, runIdCode, 'autoSignUpAction',
-                    modemPoolTable, scanTgSignUpTool, currNeedCount,
-                    shareStore = {
-                        'scanPhones': scanPhones,
-                    }
-                )
-                scanLastSuccessCount = scanInfo['successCount']
-
-                # 沒有可註冊的用戶
-                if scanLastSuccessCount == 0:
-                    break
-
-                modemPoolTable.gatherSmsScanInfo(
-                    scanInfo['scanCount'],
-                    scanLastSuccessCount
-                )
-
-                runTasks = []
-                for modemCardInfo in scanInfo['successModemCardInfos']:
-                    runTasks.append(_autoSignUpHandle(
-                        pageId, runIdCode, 'autoSignUpAction',
-                        modemCardInfo, modemPoolTable,
-                        signUpTgSignUpTool, randomName, groupPeer,
-                        singUpInfo
-                    ))
-                await asyncio.gather(*runTasks)
-                runTasks.clear()
-
-                successCount = singUpInfo['successCount']
-                if successCount < currNeedCount:
-                    currNeedCount = needCount - successCount
-                else:
-                    break
-
-            scanPhoneCount = len(scanPhones)
-            successCount = singUpInfo['successCount']
-            if successCount == 0:
-                await _asyncLogSend(pageId, 'autoSignUpAction', {
-                    'code': -1,
-                    'message': appUtils.console.log(
-                        runIdCode, _cindyAutoSignUpMessage,
-                        'failedSignUp', scanPhoneCount,
-                        ' (可註冊的用戶數量不足)' if scanLastSuccessCount == 0 else \
-                            ' (請稍後再嘗試一次)'
-                    ),
-                })
-            else:
-                await _asyncLogSend(pageId, 'autoSignUpAction', {
+                await _asyncLogSend(pageId, logName, {
                     'code': 1,
                     'message': appUtils.console.log(
-                        runIdCode, _cindyAutoSignUpMessage,
-                        'successSignUp', scanPhoneCount, successCount,
-                        '' if successCount >= currNeedCount else \
-                            ' (可註冊的用戶數量不足)' if scanLastSuccessCount == 0 else \
-                            ' (數量不足，請稍後再嘗試一次)'
+                        runIdCode, _cindyAutoSignUpMessage, 'startWhichPhone',
+                        phoneNumber
                     ),
                 })
 
-            modemPoolTable.gatherModemCardInfo()
-            modemPoolTable.store()
+                runTasks.append(_autoSignUpHandle(
+                    pageId, runIdCode, logName,
+                    modemCardInfo, modemPoolTable,
+                    signUpTgSignUpTool, randomName, groupPeer,
+                    shareStore
+                ))
+
+                if len(runTasks) == scanTaskAmount:
+                    await asyncio.gather(*runTasks)
+                    runTasks.clear()
+
+                    successCount = shareStore['successCount']
+                    if successCount < needCount:
+                        scanTaskAmount = (needCount - successCount) * _scanTaskMultiple
+                        if scanTaskAmount > scanTaskMax:
+                            scanTaskAmount = scanTaskMax
+                    else:
+                        break
+            if len(runTasks) != 0:
+                await asyncio.gather(*runTasks)
+                runTasks.clear()
+        except telethon.errors.FloodWaitError as err:
+            waitTimeSec = err.seconds
+            isCanWait = waitTimeSec < 180
+            await _asyncLogSend(pageId, logName, {
+                'code': 1 if isCanWait else -1,
+                'message': appUtils.console.error(
+                    runIdCode, _cindyAutoSignUpMessage, 'floodWait',
+                    phoneNumber, waitTimeSec,
+                    ' (waiting)' if isCanWait else ''
+                ),
+            })
+            if isCanWait:
+                await asyncio.sleep(waitTimeSec)
+            else:
+                isGetFloodWaitError = True
         except Exception as err:
-            await _asyncLogSend(pageId, 'autoSignUpAction', {
+            await _asyncLogSend(pageId, logName, {
                 'code': -1,
                 'message': appUtils.console.catchError(runIdCode, 'autoSignUp'),
             })
+
+        scanPhoneCount = shareStore['scanCount']
+        scanLastSuccessCount = shareStore['successScanCount']
+        successCount = shareStore['successCount']
+        modemPoolTable.gatherSmsScanInfo(
+            scanPhoneCount, scanLastSuccessCount, canScanCount
+        )
+        modemPoolTable.gatherModemCardInfo()
+        modemPoolTable.store()
+        await _asyncLogSend(pageId, logName, {
+            'code': -1,
+            'message': appUtils.console.log(
+                runIdCode, _cindyAutoSignUpMessage,
+                *(('failedSignUp', scanPhoneCount) if successCount == 0 else \
+                  ('successSignUp', scanPhoneCount, successCount)
+                ),
+                '' if successCount >= needCount else \
+                    ' (FloodWaitError 警告)' if isGetFloodWaitError else \
+                    ' (可註冊的用戶數量不足)' if scanLastSuccessCount == 0 else \
+                    ' (請稍後再嘗試一次)' if successCount == 0 else \
+                    ' (數量不足，請稍後再嘗試一次)'
+            ),
+        })
     except Exception as err:
-        await _asyncLogSend(pageId, 'autoSignUpAction', {
+        await _asyncLogSend(pageId, logName, {
             'code': -1,
             'message': appUtils.console.catchError(runIdCode, 'autoSignUpAction'),
         })
@@ -273,23 +275,20 @@ _cindyAutoSignUpMessage = {
     'notExpectedModemCardLineFormat': '"{}" 不符合預期的格式。',
     'failedSignUp': '共掃描 {} 張號碼但皆無法註冊。{}',
     # 1
-    'tryAgain': '第 {} 次嘗試自動註冊',
+    'startWhichPhone': '+{} Go',
     'connectBanned': '[{}]: +{} has been banned.',
     'connectOther': '[{}]: +{} skip. (無法使用自動化登入，狀態： {})',
     'signUpOther': '[{}]: +{} skip. (註冊失敗，狀態： {})',
-    'smsScanStart': '[smsScan]: 掃描開始',
-    'smsScanWhichPhone': '[smsScan]: +{} Go',
-    'smsScanConnectLogining': '[smsScanHandle]: +{} 已登入，請清除掃描用的 session。',
-    'smsScanConnectSendByApp': '[smsScanHandle]: +{} has been used.',
-    'smsScanConnectPhoneInvalid': '[smsScanHandle]: +{} phone number is invalid.',
-    'smsScanGetSmsOk': '[smsScanHandle]: +{} 掃描確認可用。',
-    'smsScanGetSmsOther': '[smsScanHandle]: +{} 無法取得簡訊驗證碼。',
     'autoSignUpStart': '[autoSignUpHandle]: 自動註冊開始',
+    'autoSignUpConnectSendByApp': '[autoSignUpHandle]: +{} has been used.',
+    'autoSignUpConnectPhoneInvalid': '[autoSignUpHandle]: +{} phone number is invalid.',
     'autoSignUpWhoami': '[autoSignUpHandle]: +{} 我是誰？',
     'autoSignUpConnectLogining': '[autoSignUpHandle]: +{} 已登入。',
     'autoSignUpEnough': '[autoSignUpHandle]: +{} 需求已飽和。',
+    'autoSignUpGetSmsOk': '[autoSignUpHandle]: +{} 掃描確認可用。',
     'autoSignUpGetSmsOther': '[autoSignUpHandle]: +{} 無法取得簡訊驗證碼。',
-    'autoSignUpGetSmsOk': '[autoSignUpHandle]: +{} my name is {}.',
+    'autoSignUpOk': '[autoSignUpHandle]: +{} my name is {}.',
+    'floodWait': '+{} get FloodWaitError: wait {} seconds.{}',
     # 2
     'successSignUp': '共掃描 {} 張號碼並成功註冊 {} 個仿用戶。{}',
 }
@@ -399,11 +398,13 @@ class ModemPoolTable():
 
         return (total, statisticInfo)
 
-    def gatherSmsScanInfo(self, scanCount: int, successCount: int) -> str:
+    def gatherSmsScanInfo(self,
+            scanCount: int,
+            successCount: int,
+            canScanCount: int) -> str:
         readableDtUtc = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
         successScanRate = math.floor(successCount / scanCount * 10000) / 100
-        canScanCount = len(self.filter(states = ['NEVER', 'TRIED']))
         txt = f'{successCount}/{scanCount} ({successScanRate}%)'
 
         self.data['statistic']['smsScan'].append({
@@ -529,6 +530,8 @@ class TgSignUpTool():
             return (self.connectStatus['PHONENUMBERINVALID'], None, '')
         except telethon.errors.PhonePasswordFloodError as err:
             return (self.connectStatus['PHONEPASSWORDFLOOD'], None, '')
+        except telethon.errors.FloodWaitError as err:
+            raise err
         except Exception as err:
             raise Exception(
                 f'from client.send_code_request() failed {type(err)} Error: {err}'
@@ -783,206 +786,6 @@ async def _asyncLogSend(pageId: str, name: str, result: typing.Any):
         'result': result,
     })
 
-async def _smsScan(
-        pageId: str,
-        runIdCode: str,
-        logName: str,
-        modemPoolTable: ModemPoolTable,
-        tgSignUpTool: TgSignUpTool,
-        needCount: typing.Union[None, int],
-        shareStore: typing.Union[None, dict] = None) -> dict:
-    await _asyncLogSend(pageId, logName, {
-        'code': 1,
-        'message': appUtils.console.log(
-            runIdCode, _cindyAutoSignUpMessage, 'smsScanStart'
-        ),
-    })
-
-    confirmTimeoutSec = _config_confirmTimeoutSec
-
-    modemCardInfos = modemPoolTable.filter(states = ['NEVER', 'TRIED'])
-    modemCardInfosLength = len(modemCardInfos)
-    if needCount == None or modemCardInfosLength < needCount:
-        needCount = modemCardInfosLength
-
-    scanTaskMultiple = _scanTaskMultiple
-    scanTaskMax = min(modemCardInfosLength, _scanTaskMax)
-
-    if shareStore == None:
-        shareStore = {
-            'needCount': needCount,
-            'scanCount': 0,
-            'successCount': 0,
-            'scanPhones': [],
-            'successModemCardInfos': [],
-        }
-    else:
-        if not 'needCount' in shareStore:
-            shareStore['needCount'] = needCount
-        if not 'scanCount' in shareStore:
-            shareStore['scanCount'] = 0
-        if not 'successCount' in shareStore:
-            shareStore['successCount'] = 0
-        if not 'scanPhones' in shareStore:
-            shareStore['scanPhones'] = []
-        if not 'successModemCardInfos' in shareStore:
-            shareStore['successModemCardInfos'] = []
-
-    currNeedCount = needCount
-    scanPhones = shareStore['scanPhones']
-    scanTaskAmount = currNeedCount * scanTaskMultiple
-    if scanTaskAmount > scanTaskMax:
-        scanTaskAmount = scanTaskMax
-    runTasks = []
-    for modemCardInfo in modemCardInfos:
-        phoneNumber = modemCardInfo['phone']
-        if phoneNumber in scanPhones:
-            continue
-        else:
-            scanPhones.append(phoneNumber)
-
-        await _asyncLogSend(pageId, logName, {
-            'code': 1,
-            'message': appUtils.console.log(
-                runIdCode, _cindyAutoSignUpMessage, 'smsScanWhichPhone', phoneNumber
-            ),
-        })
-
-        shareStore['scanCount'] += 1
-        runTasks.append(
-            _smsScanHandle(
-                pageId, runIdCode, logName,
-                modemCardInfo, modemPoolTable, tgSignUpTool, shareStore
-            )
-        )
-
-        if len(runTasks) == scanTaskAmount:
-            await asyncio.gather(*runTasks)
-            runTasks.clear()
-
-            successCount = shareStore['successCount']
-            if successCount < currNeedCount:
-                currNeedCount = needCount - successCount
-                scanTaskAmount = currNeedCount * scanTaskMultiple
-                if scanTaskAmount > scanTaskMax:
-                    scanTaskAmount = scanTaskMax
-            else:
-                break
-    if len(runTasks) != 0:
-        await asyncio.gather(*runTasks)
-        runTasks.clear()
-
-    return shareStore
-
-async def _smsScanHandle(
-        pageId: str,
-        runIdCode: str,
-        logName: str,
-        modemCardInfo: dict,
-        modemPoolTable: ModemPoolTable,
-        tgSignUpTool: TgSignUpTool,
-        shareStore: dict):
-    phoneNumber = modemCardInfo['phone']
-    smsUrl = modemCardInfo['smsUrl']
-
-    try:
-        connectStete, client, _ = await tgSignUpTool.connect(phoneNumber)
-        if client != None:
-            await client.disconnect()
-    except Exception as err:
-        modemPoolTable.updateItem(
-            modemCardInfo,
-            state = 'TRIED',
-            connectStateTxt = f'{err}'
-        )
-        raise err
-
-    if connectStete != TgSignUpTool.connectStatus['SENDBYSMS']:
-        if connectStete == TgSignUpTool.connectStatus['LOGINING']:
-            tgSignUpTool.mvSessionPath(phoneNumber, 'scanHasLogined')
-            await _asyncLogSend(pageId, logName, {
-                'code': 1,
-                'message': appUtils.console.log(
-                    runIdCode, _cindyAutoSignUpMessage,
-                    'smsScanConnectLogining', phoneNumber
-                ),
-            })
-        elif connectStete == TgSignUpTool.connectStatus['HASBANNED']:
-            modemPoolTable.updateItem(modemCardInfo, state = 'BANNED')
-            tgSignUpTool.mvSessionPath(phoneNumber, 'scanRm')
-            await _asyncLogSend(pageId, logName, {
-                'code': 1,
-                'message': appUtils.console.log(
-                    runIdCode, _cindyAutoSignUpMessage,
-                    'connectBanned', 'smsScanHandle', phoneNumber
-                ),
-            })
-        elif connectStete == TgSignUpTool.connectStatus['SENDBYAPP']:
-            modemPoolTable.updateItem(modemCardInfo, state = 'USED')
-            tgSignUpTool.mvSessionPath(phoneNumber, 'scanErr')
-            await _asyncLogSend(pageId, logName, {
-                'code': 1,
-                'message': appUtils.console.log(
-                    runIdCode, _cindyAutoSignUpMessage,
-                    'smsScanConnectSendByApp', phoneNumber
-                ),
-            })
-        elif connectStete == TgSignUpTool.connectStatus['PHONENUMBERINVALID']:
-            modemPoolTable.updateItem(
-                modemCardInfo,
-                state = 'INVALID',
-                connectStateTxt = connectStete
-            )
-            tgSignUpTool.mvSessionPath(phoneNumber, 'scanErr')
-            await _asyncLogSend(pageId, logName, {
-                'code': 1,
-                'message': appUtils.console.log(
-                    runIdCode, _cindyAutoSignUpMessage,
-                    'smsScanConnectPhoneInvalid', phoneNumber
-                ),
-            })
-        else:
-            modemPoolTable.updateItem(
-                modemCardInfo,
-                state = 'TRIED',
-                connectStateTxt = connectStete
-            )
-            await _asyncLogSend(pageId, logName, {
-                'code': 1,
-                'message': appUtils.console.log(
-                    runIdCode, _cindyAutoSignUpMessage,
-                    'connectOther', 'smsScanHandle', phoneNumber, connectStete
-                ),
-            })
-
-        return
-
-    requestSmsState, verifiedCode = await tgSignUpTool.getSmsVerifiedCode(
-        phoneNumber, smsUrl
-    )
-    if requestSmsState == TgSignUpTool.requestSmsStatus['OK']:
-        await _asyncLogSend(pageId, logName, {
-            'code': 1,
-            'message': appUtils.console.log(
-                runIdCode, _cindyAutoSignUpMessage,
-                'smsScanGetSmsOk', phoneNumber
-            ),
-        })
-        shareStore['successCount'] += 1
-        shareStore['successModemCardInfos'].append(modemCardInfo)
-    else:
-        modemPoolTable.updateItem(
-            modemCardInfo,
-            state = 'TRIED',
-            connectStateTxt = requestSmsState
-        )
-        await _asyncLogSend(pageId, logName, {
-            'code': 1,
-            'message': appUtils.console.log(
-                runIdCode, _cindyAutoSignUpMessage,
-                'smsScanGetSmsOther', phoneNumber
-            ),
-        })
 
 async def _autoSignUpHandle(
         pageId: str,
@@ -1004,18 +807,22 @@ async def _autoSignUpHandle(
     phoneNumber = modemCardInfo['phone']
     smsUrl = modemCardInfo['smsUrl']
 
-    signUpRunScanGetErrorMsg = 'signUp (scan) get error: '
+    scanGetErrorMsg = 'signUp-scan get error: '
     signUpGetErrorMsg = 'signUp get error: '
 
+    shareStore['scanCount'] += 1
     try:
         connectStete, client, phoneCodeHash = await tgSignUpTool.connect(phoneNumber)
     except Exception as err:
         modemPoolTable.updateItem(
             modemCardInfo,
             state = 'TRIED',
-            connectStateTxt = f'{signUpRunScanGetErrorMsg}{err}'
+            connectStateTxt = f'{scanGetErrorMsg}{err}'
         )
-        tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpErr')
+        if type(err) == telethon.errors.FloodWaitError:
+            tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpRm')
+        else:
+            tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpErr')
         raise err
 
     if connectStete != TgSignUpTool.connectStatus['SENDBYSMS']:
@@ -1048,11 +855,7 @@ async def _autoSignUpHandle(
                     ),
                 })
         elif connectStete == TgSignUpTool.connectStatus['HASBANNED']:
-            modemPoolTable.updateItem(
-                modemCardInfo,
-                state = 'BANNED',
-                connectStateTxt = f'{signUpRunScanGetErrorMsg}{connectStete}'
-            )
+            modemPoolTable.updateItem(modemCardInfo, state = 'BANNED')
             tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpRm')
             await _asyncLogSend(pageId, logName, {
                 'code': 1,
@@ -1061,13 +864,37 @@ async def _autoSignUpHandle(
                     'connectBanned', 'autoSignUpHandle', phoneNumber
                 ),
             })
+        elif connectStete == TgSignUpTool.connectStatus['SENDBYAPP']:
+            modemPoolTable.updateItem(modemCardInfo, state = 'USED')
+            tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpRm')
+            await _asyncLogSend(pageId, logName, {
+                'code': 1,
+                'message': appUtils.console.log(
+                    runIdCode, _cindyAutoSignUpMessage,
+                    'autoSignUpConnectSendByApp', phoneNumber
+                ),
+            })
+        elif connectStete == TgSignUpTool.connectStatus['PHONENUMBERINVALID']:
+            modemPoolTable.updateItem(
+                modemCardInfo,
+                state = 'INVALID',
+                connectStateTxt = connectStete
+            )
+            tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpRm')
+            await _asyncLogSend(pageId, logName, {
+                'code': 1,
+                'message': appUtils.console.log(
+                    runIdCode, _cindyAutoSignUpMessage,
+                    'autoSignUpConnectPhoneInvalid', phoneNumber
+                ),
+            })
         else:
             modemPoolTable.updateItem(
                 modemCardInfo,
                 state = 'INVALID',
-                connectStateTxt = f'{signUpRunScanGetErrorMsg}{connectStete}'
+                connectStateTxt = f'{scanGetErrorMsg}{connectStete}'
             )
-            tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpErr')
+            tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpRm')
             await _asyncLogSend(pageId, logName, {
                 'code': 1,
                 'message': appUtils.console.log(
@@ -1080,6 +907,7 @@ async def _autoSignUpHandle(
             await client.disconnect()
         return
 
+    isNotRecordScanSuccess = True
     fullName, firstName, lastName = randomName.get()
     for loopTimes in range(1, -1, -1):
         if shareStore['successCount'] >= shareStore['needCount']:
@@ -1098,7 +926,7 @@ async def _autoSignUpHandle(
             modemPoolTable.updateItem(
                 modemCardInfo,
                 state = 'INVALID',
-                connectStateTxt = f'{signUpRunScanGetErrorMsg}{requestSmsState}'
+                connectStateTxt = f'{scanGetErrorMsg}{requestSmsState}'
             )
             tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpErr')
             await _asyncLogSend(pageId, logName, {
@@ -1109,6 +937,17 @@ async def _autoSignUpHandle(
                 ),
             })
             break
+
+        if isNotRecordScanSuccess:
+            isNotRecordScanSuccess = False
+            shareStore['successScanCount'] += 1
+            await _asyncLogSend(pageId, logName, {
+                'code': 1,
+                'message': appUtils.console.log(
+                    runIdCode, _cindyAutoSignUpMessage, 'autoSignUpGetSmsOk',
+                    phoneNumber
+                ),
+            })
 
         if shareStore['successCount'] >= shareStore['needCount']:
             await _asyncLogSend(pageId, logName, {
@@ -1140,7 +979,7 @@ async def _autoSignUpHandle(
                     'code': 1,
                     'message': appUtils.console.log(
                         runIdCode, _cindyAutoSignUpMessage,
-                        'autoSignUpGetSmsOk', phoneNumber, fullName
+                        'autoSignUpOk', phoneNumber, fullName
                     ),
                 })
                 shareStore['successCount'] += 1
