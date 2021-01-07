@@ -14,9 +14,10 @@ _pyTool = {
     'tgPing.interactiveLogin.simple': 'tgPing/simple-interactiveLogin',
     'tgPing.updatePhoto.simple': 'tgPing/simple-updatePhoto',
     'tgPing.activeParticipants.simple': 'tgPing/simple-activeParticipants',
+    'tgPing.dialogs.simple': 'tgPing/simple-dialogs',
     'tgPing.sendForward.simple': 'tgPing/simple-sendForward',
     'tgPing.highSendMessage.simple': 'tgPing/simple-highSendMessage',
-    'tgPing.highSendForward.simple': 'tgPing/simple-highSendForward',
+    'tgPing.highSendForward.simple': 'tgPing/simple-highSendForward'
 }
 
 if len(_origArgs) == 1:

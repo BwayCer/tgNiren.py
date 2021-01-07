@@ -20,7 +20,8 @@ def main():
         serverMix.enableTool('InnerSession', 'WsHouse')
 
         router = serverMix.Router(app, 'webBox.controller')
-        router.add('GET', '/', 'home.get')
+        router.add('GET', '/', 'home.get_home')
+        router.add('GET', '/allRespond', 'home.get_allRespond')
 
         webBox.controller.ws.init('webBox/app/wsChannel')
         router.websocket('/ws', 'ws.entry')

@@ -8,6 +8,16 @@ body {
   padding: 1em;
 }
 
+.cAllRespond {
+  padding: 1em;
+
+  a {
+    margin: 0.6em 0 1em;
+    font-size: 1.4em;
+    text-decoration: none;
+  }
+}
+
 @mixin scSectionItem() {
   padding: 1em;
 

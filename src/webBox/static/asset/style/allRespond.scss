@@ -1,0 +1,42 @@
+
+body {
+  font-family: 'Noto Sans TC';
+}
+
+
+.cStatusInfo {
+  padding: 1em;
+}
+
+.cAllRespond {
+  padding: 1em;
+
+  &_status {
+    display: none;
+    margin: 1em 0.4em;
+  }
+
+  &_log {
+    padding: 0em 1em 1em;
+
+    textarea {
+      margin: 0.5em 0;
+      width: 60%;
+      height: 160px;
+      resize: none;
+    }
+  }
+
+  &_dialog {
+     margin: 2em 0.4em;
+
+     pre {
+       font-size: 16px;
+       margin: 1em 0 2em;
+       padding-left: 0.4em;
+       border-left: 3px solid #50ae0f;
+       line-height: 1.5em;
+     }
+  }
+}
+

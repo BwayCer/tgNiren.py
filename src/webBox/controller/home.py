@@ -6,11 +6,25 @@ import utils.novice as novice
 import webBox.serverMix as serverMix
 
 
-async def get() -> quart.Response:
+__all__ = ['get_home', 'get_allRespond']
+
+
+async def get_home() -> quart.Response:
     if not _wwwAuth.verifyAuth(quart.request.authorization):
         return _wwwAuth.getLoginResponse()
 
     response = quart.Response(await quart.render_template('index.html'))
+    pageId = quart.request.cookies.get('pageId')
+    if not serverMix.innerSession.hasPageId(pageId):
+        pageId = serverMix.innerSession.open(_getDefaultPageSession())
+        response.set_cookie('pageId', pageId)
+    return response
+
+async def get_allRespond() -> quart.Response:
+    if not _wwwAuth.verifyAuth(quart.request.authorization):
+        return _wwwAuth.getLoginResponse()
+
+    response = quart.Response(await quart.render_template('allRespond.html'))
     pageId = quart.request.cookies.get('pageId')
     if not serverMix.innerSession.hasPageId(pageId):
         pageId = serverMix.innerSession.open(_getDefaultPageSession())

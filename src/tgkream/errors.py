@@ -52,6 +52,16 @@ class knownError():
         # 400 USER_CHANNELS_TOO_MUCH
     }
 
+    GetDialogsRequest = {
+        'InputConstructorInvalidError': '提供的構造函數無效。',
+        'OffsetPeerIdInvalidError': '提供的偏移對等點無效。',
+        # 只有在 https://core.telegram.org/method/messages.getDialogs 的錯誤
+        # 400 FOLDER_ID_INVALID   Invalid folder ID
+        # 只有在 https://tl.telethon.dev/methods/messages/get_dialogs.html 的錯誤
+        'SessionPasswordNeededError': '',
+        'TimeoutError': '',
+    }
+
     GetHistoryRequest = {
         # 必須將臨時身份驗證密鑰綁定到永久身份驗證密鑰，才能使用這些方法。
         # 該方法不適用於臨時授權密鑰，未綁定到永久授權密鑰。
