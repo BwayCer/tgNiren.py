@@ -711,7 +711,10 @@ class TgSignUpTool():
                 await client.upload_file(_photoDirPath + '/' + files[indexStart])
             ))
         except Exception as err:
-            appUtils.console.catchErrorMsg('---', f'{type(err)} Error: {err}')
+            appUtils.console.catchErrorMsg(
+                '---',
+                'client(photos.UploadProfilePhotoRequest)', f'{type(err)} Error: {err}'
+            )
 
         return self.signUpStatus['OK']
 
