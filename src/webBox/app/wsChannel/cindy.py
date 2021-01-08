@@ -31,10 +31,11 @@ _nameListFilePath = novice.py_dirname + '/' + _envModemPool['nameListFilePath']
 _photoDirPath = novice.py_dirname + '/' + _envModemPool['photoPath']
 
 _scanTaskMultiple = 3 # 使用需求數的 X 倍數同時掃描
-_scanTaskMax = 20 # 單次同時掃描的最大值
+_scanTaskMax = 1 # 單次同時掃描的最大值
 _config_confirmTimeoutSec = 0.1
 _config_inputTimeoutSec = 0.1
 _config_requestSmsTimeoutSec = 0.1
+_config_autoSignUpTaskIntervalSec = 180
 
 
 def add(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
@@ -209,6 +210,8 @@ async def _autoSignUpAction(pageId: str, innerSession: dict, data: dict):
                             scanTaskAmount = scanTaskMax
                     else:
                         break
+
+                    await asyncio.sleep(_config_autoSignUpTaskIntervalSec)
             if len(runTasks) != 0:
                 await asyncio.gather(*runTasks)
                 runTasks.clear()
