@@ -75,6 +75,7 @@ async def _tuckUserAction(pageId: str, innerSession: dict, data: dict):
         try:
             tgTool = appUtils.getTgTool(usedClientCount)
             await tgTool.init()
+            usedClientCount = tgTool.clientCount
         except Exception as err:
             innerSession['runing'] = False
             await _tuckUserAction_send(

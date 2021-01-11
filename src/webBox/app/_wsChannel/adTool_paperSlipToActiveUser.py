@@ -98,6 +98,7 @@ async def _paperSlipToActiveUserAction(pageId: str, innerSession: dict, data: di
 
         tgTool = appUtils.getTgTool(usedClientCount)
         await tgTool.init()
+        usedClientCount = tgTool.clientCount
     except Exception as err:
         innerSession['runing'] = False
         latestStatus += ' (失敗)'
