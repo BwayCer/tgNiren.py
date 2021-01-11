@@ -80,6 +80,7 @@ async def _paperSlipToActiveUserAction(pageId: str, innerSession: dict, data: di
     niUsersStatusInfo = await appUtils.getNiUsersStatusInfo()
     usableNiUsersCount = niUsersStatusInfo['usableCount']
     if usableNiUsersCount < usedNiUserCount:
+        innerSession['runing'] = False
         await _paperSlipToActiveUserAction_send(
             pageId, -1, '仿用戶數量不足 (工具目前無法使用)。'
         )

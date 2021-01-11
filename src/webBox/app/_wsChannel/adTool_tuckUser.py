@@ -51,6 +51,7 @@ async def _tuckUserAction(pageId: str, innerSession: dict, data: dict):
         allNiUsersCount = niUsersStatusInfo['allCount']
         usableNiUsersCount = int(niUsersStatusInfo['usableCount'] * 8 / 10)
         if usableNiUsersCount < 1:
+            innerSession['runing'] = False
             await _tuckUserAction_send(pageId, -1, '工具目前無法使用。')
             return
 
