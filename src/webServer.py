@@ -3,11 +3,26 @@
 
 import os
 import quart
+import utils.chanData
+import utils.novice as novice
 import webBox.serverMix as serverMix
 import webBox.controller.ws
 
 
 def main():
+    # 初始化狀態
+    novice.logNeedle.push('服務器啟動 ...')
+    chanData = utils.chanData.ChanData()
+    if chanData.getSafe('.niUsers') == None:
+        chanData.data['niUsers'] = {
+            'cemetery': [],
+            'bandInfos': [],
+            'bandList': [],
+            'lockList': [],
+        }
+    chanData.data['niUsers']['lockList'].clear()
+
+
     app = quart.Quart(
         __name__,
         static_url_path = '/',
