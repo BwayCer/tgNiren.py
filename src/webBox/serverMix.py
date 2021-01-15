@@ -118,7 +118,7 @@ class _WsHouse():
             'task': task,
             'pageId': pageId,
             'socket': socket,
-            'rooms': [],
+            'rooms': [pageId],
         })
 
         if not self.roomCache.has(pageId):
@@ -138,7 +138,7 @@ class _WsHouse():
                 continue
             roomData = self.roomCache.get(roomId)
             channels = roomData['channels']
-            if roomId in channels:
+            if key in channels:
                 channels.remove(key)
                 if len(channels) == 0:
                     self.roomCache.remove(roomId)
