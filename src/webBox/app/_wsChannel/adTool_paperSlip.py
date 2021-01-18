@@ -113,7 +113,12 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
             await _paperSlipAction_send(pageId, 1, latestStatus)
             try:
                 forwardPeer = finalPeers[idx]
-                await tgTool.joinGroup(client, forwardPeer)
+
+                inputEntity = await client.get_input_entity(forwardPeer)
+                novice.logNeedle.push(f'(runId: {runId}) {type(inputEntity)}.')
+                if type(inputEntity) != telethon.types.InputPeerUser:
+                    await tgTool.joinGroup(client, forwardPeer)
+
                 await client(telethon.functions.messages.ForwardMessagesRequest(
                     from_peer = mainGroup,
                     id = [messageId],
