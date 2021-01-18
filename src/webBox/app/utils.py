@@ -109,6 +109,15 @@ def getTgTool(clientCount: int = 0) -> TgBaseTool:
 
 _getNiUsersStatusInfo_task = None
 
+async def _getNiUsersStatusInfo_runLogin(tgTool: TgBaseTool, phoneNumber: str):
+    taskName = asyncio.current_task().get_name()
+    novice.logNeedle.push(f'{taskName} test {phoneNumber}')
+    client = await tgTool.login(phoneNumber)
+    if client != None:
+        await tgTool.release(phoneNumber)
+        client = None
+    novice.logNeedle.push(f'{taskName} test {phoneNumber} OK')
+
 async def _getNiUsersStatusInfo_handle():
     tgTool = TgDefaultInit(
         TgBaseTool,
@@ -116,35 +125,41 @@ async def _getNiUsersStatusInfo_handle():
         papaPhone = novice.py_env['papaPhoneNumber']
     )
 
+    novice.logNeedle.push(f'{asyncio.current_task().get_name()} start')
     chanDataNiUsers = tgTool.chanDataNiUsers
     usablePhones = chanDataNiUsers.getUsablePhones()
     niUsers = chanDataNiUsers.chanData.data['niUsers']
     bandPhones = niUsers['bandList']
     lockPhones = niUsers['lockList']
+    niUsers = None
+    allCount = len(usablePhones)
 
     # NOTE:
     # 原本打算以下述程式碼來優化加快檢查時程，
     # 但卻會因為記憶體不足而以退出代碼 137 退出程式。
-    #     async def _getNiUsersStatusInfo_runLogin(tgTool: TgBaseTool, phoneNumber: str):
-    #         client = await tgTool.login(phoneNumber)
-    #         if client != None:
-    #             await tgTool.release(phoneNumber)
-    #
-    #     runLoginTasks = []
-    #     for phoneNumber in usablePhones:
-    #         runLoginTasks.append(_getNiUsersStatusInfo_runLogin(tgTool, phoneNumber))
-    #
-    #     await asyncio.gather(*runLoginTasks)
-    for phoneNumber in usablePhones:
+    taskName = asyncio.current_task().get_name()
+    runLoginTasks = []
+    for idx in range(allCount):
+        phoneNumber = usablePhones[idx]
+
         if novice.indexOf(bandPhones, phoneNumber) != -1 \
                 or novice.indexOf(lockPhones, phoneNumber) != -1:
             continue
 
-        novice.logNeedle.push(f'test {phoneNumber}')
-        client = await tgTool.login(phoneNumber)
-        if client != None:
-            await tgTool.release(phoneNumber)
-        novice.logNeedle.push(f'test {phoneNumber} OK')
+        runLoginTasks.append(_getNiUsersStatusInfo_runLogin(tgTool, phoneNumber))
+
+        if len(runLoginTasks) == 5:
+            await asyncio.gather(*runLoginTasks)
+            runLoginTasks.clear()
+        novice.logNeedle.push(f'{taskName}: {idx}/{allCount}')
+
+    if len(runLoginTasks) != 0:
+        await asyncio.gather(*runLoginTasks)
+
+        # client = await tgTool.login(phoneNumber)
+        # if client != None:
+            # await tgTool.release(phoneNumber)
+            # client = None
 
     allCount = len(chanDataNiUsers.getUsablePhones())
     lockCount = len(bandPhones) + len(lockPhones)
