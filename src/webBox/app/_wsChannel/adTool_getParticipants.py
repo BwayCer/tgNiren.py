@@ -4,6 +4,7 @@
 import typing
 import os
 import random
+import asyncio
 import utils.novice as novice
 import webBox.serverMix as serverMix
 from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
@@ -14,14 +15,7 @@ from webBox.app._wsChannel.niUsersStatus import updateStatus as niUsersStatusUpd
 __all__ = ['getParticipants']
 
 
-async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
-    innerSession = serverMix.innerSession.get(pageId)
-    if innerSession['runing']:
-        return {
-            'code': -1,
-            'message': '工具執行中。',
-        }
-
+async def getParticipants(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     if type(prop) != dict:
         return {
             'code': -1,
@@ -39,7 +33,24 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
             )
         }
 
-    groupPeer = prop['groupPeer']
+    asyncio.ensure_future(_getParticipantsAction(pageId, prop))
+    return {
+        'code': 0,
+        'message': '請求已接收。'
+    }
+
+async def _getParticipantsAction(pageId: str, data: dict):
+    niUsersStatusInfo = await appUtils.getNiUsersStatusInfo()
+    usableNiUsersCount = niUsersStatusInfo['usableCount']
+    if usableNiUsersCount < 1:
+        await _getParticipantsAction_send(pageId, {
+            'code': -1,
+            'messageType': 'Error',
+            'message': '工具目前無法使用。',
+        })
+        return
+
+    groupPeer = data['groupPeer']
 
     # 用於打印日誌
     runId = random.randrange(1000000, 9999999)
@@ -52,11 +63,12 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
         await tgTool.init()
     except Exception as err:
         errTypeName = err.__class__.__name__
-        return {
+        await _getParticipantsAction_send(pageId, {
             'code': -1,
             'messageType': errTypeName,
             'message': _getMessage.catchError(runId, 'init TgTool', {}, errTypeName),
-        }
+        })
+        return
 
     await niUsersStatusUpdateStatus(usableCount = -1)
 
@@ -80,7 +92,7 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
             await niUsersStatusUpdateStatus(usableCount = 1)
 
             errTypeName = err.__class__.__name__
-            return {
+            await _getParticipantsAction_send(pageId, {
                 'code': -1,
                 'messageType': errTypeName,
                 'message': _getMessage.catchError(
@@ -89,7 +101,8 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
                     _joinGroupKnownErrorTypeInfo,
                     errTypeName
                 ),
-            }
+            })
+            return
 
     novice.logNeedle.push(
         '(runId: {}) tgTool.getParticipants()'.format(runId)
@@ -107,7 +120,7 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
         await niUsersStatusUpdateStatus(usableCount = 1)
 
         errTypeName = err.__class__.__name__
-        return {
+        await _getParticipantsAction_send(pageId, {
             'code': -1,
             'messageType': errTypeName,
             'message': _getMessage.catchError(
@@ -116,19 +129,20 @@ async def getParticipants(pageId: str, prop: typing.Any = None) -> dict:
                 _getParticipantsKnownErrorTypeInfo,
                 errTypeName
             ),
-        }
+        })
+        return
 
     await tgTool.release()
     await niUsersStatusUpdateStatus(usableCount = 1)
 
-    return {
+    await _getParticipantsAction_send(pageId, {
         'code': 1,
         'messageType': 'success',
         'message': _getMessage.log(
             runId, _interactiveMessage, 'success', len(userIds)
         ),
         'participantIds': userIds,
-    }
+    })
 
 
 _interactiveMessage = {
@@ -227,4 +241,12 @@ class _getMessage():
             '(runId: {}) from {} Failed {}'.format(runIdCode, fromState, errMsg)
         )
         return errMsg
+
+async def _getParticipantsAction_send(
+        pageId: str,
+        payload: dict) -> None:
+    await serverMix.wsHouse.send(pageId, fnResult = {
+        'name': 'adTool.getParticipantsAction',
+        'result': payload,
+    })
 

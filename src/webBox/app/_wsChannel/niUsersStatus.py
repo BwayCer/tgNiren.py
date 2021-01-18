@@ -3,7 +3,6 @@
 
 import typing
 import asyncio
-import json
 import utils.novice as novice
 import webBox.serverMix as serverMix
 import webBox.app.utils as appUtils
@@ -61,22 +60,24 @@ async def _latestStatus():
 
 async def _send(pageId: str, niUsersStatusTxt: str):
     innerSession = serverMix.innerSession.get(pageId)
+    latestStatus = innerSession['latestStatus'] \
+        if innerSession != None and 'latestStatus' in innerSession else None
     await serverMix.wsHouse.send(
         pageId,
-        json.dumps([{
-            'type': 'niUsersStatus.latestStatus',
-            'niUsersStatus': niUsersStatusTxt,
-            'latestStatus': innerSession['latestStatus']
-        }])
+        fnResult = {
+            'name': 'niUsersStatus.latestStatus',
+            'result': {
+                'niUsersStatus': niUsersStatusTxt,
+                'latestStatus': latestStatus,
+            },
+        }
     )
 
 async def _sendAll(isChange: bool = True):
     niUsersStatusTxt = _getNiUsersStatusTxt(_prevStatus)
     for pageId in _subscriber:
-        if serverMix.wsHouse.connectLength(pageId) == 0:
-            pageIdIdx = novice.indexOf(_subscriber, pageId)
-            if pageIdIdx != -1:
-                del _subscriber[pageIdIdx]
+        if not serverMix.wsHouse.hasRoom(pageId):
+            _subscriber.remove(pageId)
             break
 
         if isChange:

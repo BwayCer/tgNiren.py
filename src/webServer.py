@@ -7,7 +7,7 @@ import webBox.serverMix as serverMix
 import webBox.controller.ws
 
 
-def main() -> None:
+def main():
     app = quart.Quart(
         __name__,
         static_url_path = '/',
@@ -15,13 +15,15 @@ def main() -> None:
         template_folder = './webBox/pages'
     )
 
-    serverMix.enableTool('InnerSession', 'WsHouse')
+    @app.before_serving
+    async def beforeServing():
+        serverMix.enableTool('InnerSession', 'WsHouse')
 
-    router = serverMix.Router(app, 'webBox.controller')
-    router.add('GET', '/', 'home.get')
+        router = serverMix.Router(app, 'webBox.controller')
+        router.add('GET', '/', 'home.get')
 
-    webBox.controller.ws.init('webBox/app/wsChannel')
-    router.websocket('/ws', 'ws.entry')
+        webBox.controller.ws.init('webBox/app/wsChannel')
+        router.websocket('/ws', 'ws.entry')
 
     app.run(host = '0.0.0.0', port = 5000, debug=True)
 

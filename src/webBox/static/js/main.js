@@ -3,48 +3,102 @@
 
 (async _ => {
     const ws = new WebSocket('ws://' + document.domain + ':' + location.port + '/ws');
+    let wsId = '';
     await (function connectWs(ws) {
         ws.onopen = function () {
             ws.send('pin')
         };
 
-        return new Promise(function (reject, resolve) {
+        return new Promise(function (resolve, reject) {
+            let isSendHandshake = false;
+            let timerId = setTimeout(function () {
+                ws.close();
+                alert('連線超時 請試試重整網頁 (F5)');
+                reject(Error('WebSocket connection timeout.'));
+            }, 10000);
             ws.onmessage = function (evt) {
-                let receiveDatasTxt = evt.data;
+                let receiveDataTxt = evt.data;
 
-                switch (receiveDatasTxt) {
-                    case 'pon':
-                        ws.send('register')
-                        break
-                    case 'register-ok':
-                        ws.onopen = ws.onmessage = null;
-                        reject('ok');
-                        break
+                if (isSendHandshake) {
+                    let receiveData;
+                    try {
+                        receiveData = JSON.parse(receiveDataTxt);
+                    } catch (err) {
+                        return;
+                    }
+                    if (receiveData === null || typeof receiveData !== 'object') {
+                        return;
+                    }
+                    if (receiveData.stateCode === 401 && 'wsId' in receiveData) {
+                        wsId = receiveData.wsId;
+                        ws.send(`{"wsId": "${wsId}"}`);
+                        return;
+                    }
+                    if (receiveData.stateCode === 200 && receiveData.wsId === wsId) {
+                        clearTimeout(timerId);
+                        resolve('ok');
+                        return;
+                    }
+                } else if (receiveDataTxt === 'pon') {
+                    isSendHandshake = true;
+                    ws.send('handshake')
                 }
             };
-            setTimeout(function () {
-                resolve('timeout');
-            }, 10000);
         });
     })(ws);
 
     ws.onclose = function (evt) {
         alert('失去連線 請試試重整網頁 (F5)');
     };
+    ws.onerror = function (evt) {
+        alert('失去連線 請試試重整網頁 (F5)');
+    };
+
+    function getRandomId() {
+        return parseInt(Math.random().toString().substr(-7));
+    }
 
     let wsMethodBox = {};
     ws.onmessage = function (evt) {
-        const receiveDatasTxt = evt.data;
-        console.log(receiveDatasTxt);
+        let receiveDatas;
+        let receiveDatasTxt = evt.data;
+        console.log('receive:', receiveDatasTxt);
 
-        const receiveDatas = JSON.parse(receiveDatasTxt)
-        if (receiveDatas.constructor === Array) {
+        if (receiveDatasTxt === 'pon') {
+            if (wsMethodBox.hasOwnProperty('pon')) {
+                try {
+                    wsMethodBox['pon']();
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+            return;
+        }
+
+        try {
+            receiveDatas = JSON.parse(receiveDatasTxt);
+        } catch (err) {
+            console.error(err)
+        }
+
+        if (receiveDatas === null
+            || typeof receiveDatas !== 'object'
+            || receiveDatas.wsId !== wsId) {
+            console.error('丟棄資料： ' + receiveDatasTxt)
+        }
+
+        if ('rtns' in receiveDatas && receiveDatas.rtns.constructor === Array) {
+            let rtns = receiveDatas.rtns
             let key, item, type;
-            for (key in receiveDatas) {
-                item = receiveDatas[key];
-                if ('type' in item && wsMethodBox.hasOwnProperty(item.type)) {
+            for (key in rtns) {
+                item = rtns[key];
+                if ('name' in item && wsMethodBox.hasOwnProperty(item.name)) {
                     try {
-                        wsMethodBox[item.type](item);
+                        if ('error' in item) {
+                            wsMethodBox[item.name](item.error);
+                        } else if ('result' in item) {
+                            wsMethodBox[item.name](null, item.result);
+                        }
                     } catch (err) {
                         console.error(err)
                     }
@@ -53,24 +107,59 @@
         }
     };
 
-    wsMethodBox['pinpon.pin'] = function (receive) {
-        console.log('pinpon.pin', receive)
+    wsMethodBox['pinpon.pin'] = function (err, result) {
+        console.log('pinpon.pin', result)
     };
-    wsMethodBox['pinpon.pon'] = function (receive) {
-        console.log('pinpon.pon', receive)
+    wsMethodBox['pinpon.pon'] = function (err, result) {
+        console.log('pinpon.pon', result)
     };
-    ws.send(JSON.stringify([{type: 'pinpon.pin', prop: 3}]));
+    ws.send(JSON.stringify({
+        wsId, fns: [{randId: getRandomId(), name: 'pinpon.pin', prop: 3}]
+    }));
+
+    (_ => {
+        let prevTimestamp = 0;
+        let isFocus = true;
+        let isCanPin = true;
+
+        wsMethodBox['pon'] = function () {
+            isCanPin = true;
+        };
+
+        (function tmp() {
+            if (isFocus && isCanPin) {
+                isCanPin = false;
+                prevTimestamp = +new Date();
+                ws.send('pin');
+            }
+            setTimeout(tmp, 1200000);
+        })();
+
+        window.addEventListener('blur', function () {
+            isFocus = false;
+        });
+        window.addEventListener('focus', function () {
+            isFocus = true;
+            let now = +new Date();
+            if (now - prevTimestamp > 2400000) {
+                prevTimestamp = now;
+                ws.send('pin');
+            }
+        });
+    })();
 
     (_ => {
         const helNiUsersStatus = document.querySelector('.cStatusInfo_niUsers');
 
-        wsMethodBox['niUsersStatus.latestStatus'] = function (receive) {
-            let niUsersStatus = receive.niUsersStatus;
+        wsMethodBox['niUsersStatus.latestStatus'] = function (err, result) {
+            let niUsersStatus = result.niUsersStatus;
             niUsersStatus = niUsersStatus !== null ? niUsersStatus : '---';
 
             helNiUsersStatus.innerText = niUsersStatus;
         };
-        ws.send(JSON.stringify([{type: 'ws.subscribe', prop: 'latestStatus'}]));
+        ws.send(JSON.stringify({wsId, fns: [
+            {randId: getRandomId(), name: 'ws.subscribe', prop: 'latestStatus'},
+        ]}));
     })();
 
     (_ => {
@@ -99,22 +188,20 @@
             = wsMethodBox['interactiveLogin.verifiedPassword']
             = wsMethodBox['interactiveLogin.deleteAccount']
             = wsMethodBox['interactiveLogin.signup']
-            = function (receive) {
-                console.log('interactiveLogin', receive)
-
-                if ('error' in receive) {
-                    console.error(receive.error);
-                    helLoginPopStatus.innerText = receive.error.message;
+            = function (err, result) {
+                if (err) {
+                    console.error(`${err.name}: ${err.message}`);
+                    helLoginPopStatus.innerText = err.message;
                     return;
                 }
 
-                interactiveLoginInfo.prevRequest = receive;
-                helLoginPopStatus.innerText = receive.message;
-                if (receive.code >= 0) {
-                    interactiveLoginInfo.hostStateCode = receive.code;
+                interactiveLoginInfo.prevRequest = result;
+                helLoginPopStatus.innerText = result.message;
+                if (result.code >= 0) {
+                    interactiveLoginInfo.hostStateCode = result.code;
                 }
 
-                // switch (receive.code) {
+                // switch (result.code) {
                 //     case -3: // 登入錯誤
                 //     case -2: // 互動錯誤
                 //     case -1: // 程式錯誤
@@ -122,13 +209,13 @@
                 //     case 2: // 密碼互動
                 //     case 4: // 登入/註冊成功
                 // }
-                switch (`c${String(receive.code)}_${receive.messageType}`) {
+                switch (`c${String(result.code)}_${result.messageType}`) {
                     case 'c1_sendCode':
                     case 'c1_sendCodeAndNext':
                     case 'c1_sendCodeAndNextHasTimeout':
                         interactiveLoginInfo.stateCode = 1;
-                        // interactiveLoginInfo.phoneNumber = receive.phoneNumber;
-                        interactiveLoginInfo.phoneCodeHash = receive.phoneCodeHash;
+                        // interactiveLoginInfo.phoneNumber = result.phoneNumber;
+                        interactiveLoginInfo.phoneCodeHash = result.phoneCodeHash;
                         break;
                     case 'c1_passwordNeeded':
                         interactiveLoginInfo.stateCode = 2;
@@ -175,14 +262,15 @@
             }
 
             let payload = {
-                type: 'interactiveLogin.sendCode',
+                randId: getRandomId(),
+                name: 'interactiveLogin.sendCode',
                 prop: {
                     phoneNumber: phoneNumber,
                     phoneCodeHash: interactiveLoginInfo.phoneCodeHash,
                 },
             };
             pushLoginPop('以其他方式寄送');
-            ws.send(JSON.stringify([payload]));
+            ws.send(JSON.stringify({wsId, fns: [payload]}));
         });
         helDeleteAccountBtn.addEventListener('click', async function (evt) {
             evt.preventDefault();
@@ -198,14 +286,15 @@
             }
 
             let payload = {
-                type: 'interactiveLogin.deleteAccount',
+                randId: getRandomId(),
+                name: 'interactiveLogin.deleteAccount',
                 prop: {
                     phoneNumber: phoneNumber,
                     phoneCodeHash: interactiveLoginInfo.phoneCodeHash,
                 },
             };
             pushLoginPop('重設帳戶');
-            ws.send(JSON.stringify([payload]));
+            ws.send(JSON.stringify({wsId, fns: [payload]}));
         });
         helFormSubmitBtn.addEventListener('click', async function (evt) {
             evt.preventDefault();
@@ -221,13 +310,13 @@
                 return;
             }
 
-            let payload = {type: '', prop: null};
+            let payload = {randId: getRandomId(), type: '', prop: null};
 
             if (interactiveLoginInfo.stateCode === 0) {
-                payload.type = 'interactiveLogin.login';
+                payload.name = 'interactiveLogin.login';
                 payload.prop = {phoneNumber};
                 pushLoginPop(`登入 +${phoneNumber}`);
-                ws.send(JSON.stringify([payload]));
+                ws.send(JSON.stringify({wsId, fns: [payload]}));
                 return;
             }
 
@@ -272,8 +361,8 @@
                     pushLoginPop(`送出 ${name} 名稱`);
             }
 
-            payload.type = 'interactiveLogin.' + methodName;
-            ws.send(JSON.stringify([payload]));
+            payload.name = 'interactiveLogin.' + methodName;
+            ws.send(JSON.stringify({wsId, fns: [payload]}));
         });
         helFormResetBtn.addEventListener('click', async function (evt) {
             evt.preventDefault();
@@ -297,45 +386,49 @@
 
     (_ => {
         const helPaperSlipStatus = document.querySelector('.cGetParticipants_status');
+        const helGetParticipantsStatus = document.querySelector('.cGetParticipants_status');
         const helFormRoomId = document.querySelector('.cGetParticipants_form_roomId > .markInput');
 
         const helFormSubmitBtn = document.querySelector('.cGetParticipants_form_submit');
 
-        wsMethodBox['adTool.getParticipants'] = function (receive) {
-            console.log('adTool', receive)
+        wsMethodBox['adTool.getParticipants']
+            = wsMethodBox['adTool.getParticipantsAction']
+            = function (err, result) {
+                if (err) {
+                    console.error(`${err.name}: ${err.message}`);
+                    helGetParticipantsStatus.innerText = err.message;
+                    return;
+                }
 
-            if ('error' in receive) {
-                console.error(receive.error);
-                helPaperSlipStatus.innerText = receive.error.message;
-                return;
-            }
+                console.log('adTool.getParticipants', result)
 
-            if (receive.code < 0) {
-                console.error('adTool.paperSlip', receive);
-            }
-            helPaperSlipStatus.innerText = receive.message;
+                if (result.code < 0) {
+                    console.error('adTool.getParticipants', result);
+                }
+                helGetParticipantsStatus.innerText = result.message;
 
-            if (receive.code === 1 && receive.participantIds.length > 0) {
-                let url = '';
-                try {
-                    let csvContent = `${receive.participantIds.join(',\n')}`;
-                    url = window.URL.createObjectURL(
-                        new Blob([csvContent], {type: 'text/plain'})
-                    );
+                if (result.code === 1 && result.participantIds.length > 0) {
+                    let url = '';
+                    try {
+                        let csvContent = `${result.participantIds.join(',\n')}`;
+                        url = window.URL.createObjectURL(
+                            new Blob([csvContent], {type: 'text/plain'})
+                        );
 
-                    let downloadLink = document.createElement('a');
-                    downloadLink.href = url;
-                    downloadLink.download = 'participantUserNames.csv';
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                } finally {
-                    if (url !== '') {
-                        window.URL.revokeObjectURL(url);
+                        let downloadLink = document.createElement('a');
+                        downloadLink.href = url;
+                        downloadLink.download = 'participantUserNames.csv';
+                        document.body.appendChild(downloadLink);
+                        downloadLink.click();
+                        document.body.removeChild(downloadLink);
+                    } finally {
+                        if (url !== '') {
+                            window.URL.revokeObjectURL(url);
+                        }
                     }
                 }
             }
-        };
+        ;
         let _regexWord = /\w/;
         helFormSubmitBtn.addEventListener('click', async function (evt) {
             evt.preventDefault();
@@ -344,12 +437,11 @@
                 alert('請填寫群組 ID');
                 return;
             }
-            ws.send(JSON.stringify([{
-                type: 'adTool.getParticipants',
-                prop: {
-                    groupPeer: roomIdTxt,
-                },
-            }]));
+            ws.send(JSON.stringify({wsId, fns: [{
+                randId: getRandomId(),
+                name: 'adTool.getParticipants',
+                prop: {groupPeer: roomIdTxt},
+            }]}));
         });
     })();
 
@@ -404,17 +496,17 @@
 
         wsMethodBox['adTool.tuckUser']
             = wsMethodBox['adTool.tuckUserAction']
-            = function (receive) {
-                if ('error' in receive) {
-                    console.error(receive.error);
-                    helTuckUserStatus.innerText = receive.error.message;
+            = function (err, result) {
+                if (err) {
+                    console.error(`${err.name}: ${err.message}`);
+                    helTuckUserStatus.innerText = err.message;
                     return;
                 }
 
-                if (receive.code < 0) {
-                    console.error('adTool.tuckUser', receive);
+                if (result.code < 0) {
+                    console.error('adTool.tuckUser', result);
                 }
-                helTuckUserStatus.innerText = receive.message;
+                helTuckUserStatus.innerText = result.message;
             }
         ;
         let _regexWord = /\w/;
@@ -432,13 +524,14 @@
                     alert('請填寫群組 ID');
                     return;
                 }
-                ws.send(JSON.stringify([{
-                    type: 'adTool.tuckUser',
+                ws.send(JSON.stringify({wsId, fns: [{
+                    randId: getRandomId(),
+                    name: 'adTool.tuckUser',
                     prop: {
                         userPeerList: userIdsTxt.split(','),
                         toGroupPeer: toGroupTxt,
                     },
-                }]));
+                }]}));
             })
         ;
     })();
@@ -472,19 +565,17 @@
 
         wsMethodBox['adTool.paperSlip']
             = wsMethodBox['adTool.paperSlipAction']
-            = function (receive) {
-                console.log('adTool', receive)
-
-                if ('error' in receive) {
-                    console.error(receive.error);
-                    helPaperSlipStatus.innerText = receive.error.message;
+            = function (err, result) {
+                if (err) {
+                    console.error(`${err.name}: ${err.message}`);
+                    helPaperSlipStatus.innerText = err.message;
                     return;
                 }
 
-                if (receive.code < 0) {
-                    console.error('adTool.paperSlip', receive);
+                if (result.code < 0) {
+                    console.error('adTool.paperSlip', result);
                 }
-                helPaperSlipStatus.innerText = receive.message;
+                helPaperSlipStatus.innerText = result.message;
             }
         ;
         let _regexWord = /\w/;
@@ -502,17 +593,17 @@
                     alert('來源鏈結格式錯誤');
                     return;
                 }
-                ws.send(JSON.stringify([{
-                    type: 'adTool.paperSlip',
+                ws.send(JSON.stringify({wsId, fns: [{
+                    randId: getRandomId(),
+                    name: 'adTool.paperSlip',
                     prop: {
                         forwardPeerList: roomIdsTxt.split(','),
                         mainGroup: matchSourceLinkTxt[1],
                         messageId: parseInt(matchSourceLinkTxt[2]),
                     },
-                }]));
+                }]}));
             })
         ;
     })();
 })();
-
 

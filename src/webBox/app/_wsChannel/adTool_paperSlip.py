@@ -4,7 +4,6 @@
 import typing
 import random
 import asyncio
-import json
 import utils.novice as novice
 import webBox.serverMix as serverMix
 from tgkream.tgTool import telethon, TgDefaultInit, TgBaseTool
@@ -15,7 +14,7 @@ from webBox.app._wsChannel.niUsersStatus import updateStatus as niUsersStatusUpd
 __all__ = ['paperSlip']
 
 
-async def paperSlip(pageId: str, prop: typing.Any = None) -> dict:
+async def paperSlip(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     innerSession = serverMix.innerSession.get(pageId)
     if innerSession['runing']:
         return {
@@ -61,6 +60,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
     niUsersStatusInfo = await appUtils.getNiUsersStatusInfo()
     usableNiUsersCount = niUsersStatusInfo['usableCount']
     if usableNiUsersCount < 3:
+        innerSession['runing'] = False
         await _paperSlipAction_send(pageId, -1, '工具目前無法使用。')
         return
 
@@ -83,7 +83,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
         innerSession['runing'] = False
         latestStatus += ' (失敗)'
         novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
-        await _paperSlipAction_send(pageId, -1, latestStatus, ynError = True)
+        await _paperSlipAction_send(pageId, -1, latestStatus, isError = True)
         return
 
     await niUsersStatusUpdateStatus(usableCount = -1 * usedClientCount)
@@ -198,7 +198,7 @@ async def _paperSlipAction(pageId: str, innerSession: dict, data: dict):
     except Exception as err:
         latestStatus += ' (失敗)'
         novice.logNeedle.push('(runId: {}) {}'.format(runId, latestStatus))
-        await _paperSlipAction_send(pageId, -1, latestStatus, ynError = True)
+        await _paperSlipAction_send(pageId, -1, latestStatus, isError = True)
     finally:
         innerSession['runing'] = False
         await niUsersStatusUpdateStatus(usableCount = usedClientCount)
@@ -242,13 +242,12 @@ async def _paperSlipAction_send(
         pageId: str,
         code: int,
         message: str,
-        ynError = False) -> None:
+        isError = False) -> None:
     payload = {
-        'type': 'adTool.paperSlipAction',
         'code': code,
         'message': message,
     }
-    if ynError:
+    if isError:
         errInfo = novice.sysExceptionInfo()
         errMsg = novice.sysTracebackException()
         payload['message'] += '\n' + errMsg
@@ -257,10 +256,10 @@ async def _paperSlipAction_send(
             'message': errInfo['message'],
             'stackList': errInfo['stackList'],
         }
-    await serverMix.wsHouse.send(
-        pageId,
-        json.dumps([payload])
-    )
+    await serverMix.wsHouse.send(pageId, fnResult = {
+        'name': 'adTool.paperSlipAction',
+        'result': payload,
+    })
 
 def _filterGuy(tgTool: TgBaseTool, mainList: typing.List[str]) -> typing.List[str]:
     blackGuyList = tgTool.chanData.data['blackGuy']['list']

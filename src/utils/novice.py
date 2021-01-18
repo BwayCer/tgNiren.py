@@ -8,6 +8,8 @@ import sys
 import atexit
 import time
 import datetime
+import asyncio
+import uuid
 import utils.json
 
 
@@ -105,6 +107,33 @@ def indexOf(target: typing.Union[str, list], index, *args) -> int:
     except ValueError:
         return -1
 
+def dSetTimeout(intervalSec: float, loop: int = 0) -> typing.Callable:
+    if intervalSec <= 0:
+        raise Exception('"intervalSec" must be a positive number.')
+    if loop < 0:
+        raise Exception('"loop" is not of the expected value.')
+
+    def realDecorator(fn):
+        async def loopTimer():
+            loopTimes = 0
+
+            while True:
+                await asyncio.sleep(intervalSec)
+
+                loopTimes += 1
+                result = fn()
+                if asyncio.iscoroutine(result):
+                    result = await result
+
+                if result == 'BREAK':
+                    break
+                elif loop != 0 and loopTimes >= loop:
+                    break
+
+        asyncio.create_task(loopTimer())
+
+    return realDecorator
+
 
 def dateNow() -> datetime.datetime:
     return datetime.datetime.now()
@@ -142,4 +171,74 @@ def dateUtcStringify(dt: datetime.datetime) -> str:
     dtstamp = dtMs / 1000
     return datetime.datetime.fromtimestamp(dtstamp).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     # return datetime.datetime.now().replace(tzinfo=datetime.timezone.utc).isoformat()
+
+
+class CacheData():
+    def __init__(self, extensionHours: float = 0):
+        self.data = {}
+        self._extensionHours = extensionHours
+
+    def register(self, key: str = '', data: dict = {}) -> str:
+        itemData = data
+
+        if key == '':
+            key = self.getNewKey()
+
+        if self._extensionHours != 0:
+            itemData['expiryTimestamp'] \
+                = dateUtcNowOffsetTimestamp(hours = self._extensionHours)
+
+        self.data[key] = itemData
+        return key
+
+    def getNewKey(self) -> str:
+        data = self.data
+        while True:
+            key = str(uuid.uuid4())
+            if not key in data:
+                break
+        return key
+
+    def size(self) -> int:
+        return len(self.data)
+
+    def has(self, key: str) -> bool:
+        return key in self.data
+
+    def get(self, key: str) -> typing.Union[None, dict]:
+        data = self.data
+        return data[key] if key in data else None
+
+    def remove(self, key: str):
+        data = self.data
+        if key in data:
+            del data[key]
+
+    def extendedDuration(self, key: str):
+        itemData = self.get(key)
+        if itemData != None and 'expiryTimestamp' in itemData:
+            itemData['expiryTimestamp'] \
+                = dateUtcNowOffsetTimestamp(hours = self._extensionHours)
+
+    def expiredCheck(self, key: str = '') -> list:
+        data = self.data
+        if len(data) == 0:
+            return
+
+        expiredList = []
+        nowTimeMs = dateUtcNowTimestamp()
+        if key == '':
+            for key in list(data):
+                itemData = data[key]
+                if itemData['expiryTimestamp'] <= nowTimeMs:
+                    del data[key]
+                    expiredList.append({'key': key, 'data': itemData})
+        else:
+            if key in data:
+                itemData = data[key]
+                if itemData['expiryTimestamp'] <= nowTimeMs:
+                    del data[key]
+                    expiredList.append({'key': key, 'data': itemData})
+
+        return expiredList
 

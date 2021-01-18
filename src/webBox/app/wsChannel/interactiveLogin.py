@@ -19,7 +19,7 @@ TelegramClient = telethon.TelegramClient
 tgSession = TgSession('telethon-' + novice.py_env['apiId'])
 
 
-async def login(pageId: str, prop: typing.Any = None) -> dict:
+async def login(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     if type(prop) != dict:
         return {
             'code': -1,
@@ -96,7 +96,7 @@ async def login(pageId: str, prop: typing.Any = None) -> dict:
         info['phoneCodeHash'] = sendCodeInfo['phoneCodeHash']
         return sendCodeInfo
 
-async def sendCode(pageId: str, prop: typing.Any = None) -> dict:
+async def sendCode(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     if type(prop) != dict:
         return {
             'code': -1,
@@ -138,7 +138,7 @@ async def sendCode(pageId: str, prop: typing.Any = None) -> dict:
         info['phoneCodeHash'] = sendCodeInfo['phoneCodeHash']
         return sendCodeInfo
 
-async def verifiedCode(pageId: str, prop: typing.Any = None) -> dict:
+async def verifiedCode(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     if type(prop) != dict:
         return {
             'code': -1,
@@ -255,7 +255,7 @@ async def verifiedCode(pageId: str, prop: typing.Any = None) -> dict:
         'phoneNumber': phoneNumber,
     }
 
-async def verifiedPassword(pageId: str, prop: typing.Any = None) -> dict:
+async def verifiedPassword(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     if type(prop) != dict:
         return {
             'code': -1,
@@ -339,7 +339,7 @@ async def verifiedPassword(pageId: str, prop: typing.Any = None) -> dict:
         'phoneNumber': phoneNumber,
     }
 
-async def deleteAccount(pageId: str, prop: typing.Any = None) -> dict:
+async def deleteAccount(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     if type(prop) != dict:
         return {
             'code': -1,
@@ -426,7 +426,7 @@ async def deleteAccount(pageId: str, prop: typing.Any = None) -> dict:
         ),
     }
 
-async def signup(pageId: str, prop: typing.Any = None) -> dict:
+async def signup(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     if type(prop) != dict:
         return {
             'code': -1,

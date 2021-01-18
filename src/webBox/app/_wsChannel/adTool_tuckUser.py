@@ -4,7 +4,6 @@
 import typing
 import random
 import asyncio
-import json
 import utils.novice as novice
 import webBox.serverMix as serverMix
 from tgkream.tgTool import knownError, telethon, TgDefaultInit, TgBaseTool
@@ -15,7 +14,7 @@ from webBox.app._wsChannel.niUsersStatus import updateStatus as niUsersStatusUpd
 __all__ = ['tuckUser']
 
 
-async def tuckUser(pageId: str, prop: typing.Any = None) -> dict:
+async def tuckUser(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
     innerSession = serverMix.innerSession.get(pageId)
     if innerSession['runing']:
         return {
@@ -288,7 +287,6 @@ async def _tuckUserAction_send(
         message: str,
         isError = False) -> None:
     payload = {
-        'type': 'adTool.tuckUserAction',
         'code': code,
         'message': message,
     }
@@ -301,10 +299,10 @@ async def _tuckUserAction_send(
             'message': errInfo['message'],
             'stackList': errInfo['stackList'],
         }
-    await serverMix.wsHouse.send(
-        pageId,
-        json.dumps([payload])
-    )
+    await serverMix.wsHouse.send(pageId, fnResult = {
+        'name': 'adTool.tuckUserAction',
+        'result': payload,
+    })
 
 def _filterGuy(tgTool: TgBaseTool, mainList: typing.List[str]) -> typing.List[str]:
     blackGuyList = tgTool.chanData.data['blackGuy']['list']
