@@ -111,12 +111,10 @@ _getNiUsersStatusInfo_task = None
 
 async def _getNiUsersStatusInfo_runLogin(tgTool: TgBaseTool, phoneNumber: str):
     taskName = asyncio.current_task().get_name()
-    novice.logNeedle.push(f'{taskName} test {phoneNumber}')
     client = await tgTool.login(phoneNumber)
     if client != None:
         await tgTool.release(phoneNumber)
         client = None
-    novice.logNeedle.push(f'{taskName} test {phoneNumber} OK')
 
 async def _getNiUsersStatusInfo_handle():
     tgTool = TgDefaultInit(
@@ -151,10 +149,11 @@ async def _getNiUsersStatusInfo_handle():
         if len(runLoginTasks) == 5:
             await asyncio.gather(*runLoginTasks)
             runLoginTasks.clear()
-        novice.logNeedle.push(f'{taskName}: {idx}/{allCount}')
+            novice.logNeedle.push(f'{taskName}: {idx + 1}/{allCount}')
 
     if len(runLoginTasks) != 0:
         await asyncio.gather(*runLoginTasks)
+        novice.logNeedle.push(f'{taskName}: {idx + 1}/{allCount}')
 
         # client = await tgTool.login(phoneNumber)
         # if client != None:

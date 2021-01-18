@@ -38,6 +38,7 @@ async def updateStatus(allCount: int = 0, usableCount: int = 0):
     _prevStatus['usableCount'] = 0 if usableCount < 0 else \
         usableCount if usableCount <= allCount else allCount
 
+    novice.logNeedle.push(f'_wsChannel/niUsersStatus updateStatus')
     await _sendAll()
 
 
@@ -54,7 +55,7 @@ async def _latestStatus():
 
         novice.logNeedle.push(
             f'{taskName} _wsChannel/niUsersStatus isChange:'
-            f' {isChange} {allCount} {usableCount}'
+            f' {isChange} {usableCount}/{allCount}'
         )
         if isChange:
             _prevStatus['allCount'] = allCount
@@ -66,13 +67,11 @@ async def _latestStatus():
             f'{taskName} _wsChannel/niUsersStatus len(subscriber): {len(_subscriber)}'
         )
         if len(_subscriber) == 0:
-            novice.logNeedle.push(
-                f'{taskName} _wsChannel/niUsersStatus: task end'
-            )
+            novice.logNeedle.push(f'{taskName} _wsChannel/niUsersStatus: task end')
             break
         else:
-            novice.logNeedle.push(f'{taskName} _wsChannel/niUsersStatus sleep 60')
-            await asyncio.sleep(60)
+            novice.logNeedle.push(f'{taskName} _wsChannel/niUsersStatus sleep 120')
+            await asyncio.sleep(120)
             novice.logNeedle.push(f'{taskName} _wsChannel/niUsersStatus getUp')
 
 
