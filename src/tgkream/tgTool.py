@@ -345,7 +345,7 @@ class _TgNiUsers():
         await self.init()
 
     def lookforClientInfo(self,
-            idCode: typing.Union[str, int]) -> typing.Union[TelegramClient, None]:
+            idCode: typing.Union[str, int]) -> typing.Union[None, dict]:
         clientInfoList = self._clientInfoList
         for clientInfo in clientInfoList:
             if clientInfo['id'] == idCode or clientInfo['userId'] == idCode:
