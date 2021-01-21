@@ -1,0 +1,44 @@
+version: "3"
+
+services:
+  k8small:
+    restart: always
+    build:
+      context: .
+      dockerfile: k8small.dockerfile
+    image: local/k8small
+    container_name: test-k8small
+    hostname: k8small
+    # env_file:
+    #   - ../.env/cache.env
+    #   - ../.env/config.env
+    #   - ../.env/deploy.env
+    ports:
+      - "80:80/tcp"
+    volumes:
+      - ../../src/:/data/.d:rw
+# services:
+#   nginx:
+#     restart: always
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     image: web-stack/nginx
+#     container_name: web-stack-nginx
+#     hostname: nginx
+#     env_file:
+#       - ../.env/cache.env
+#       - ../.env/config.env
+#       - ../.env/deploy.env
+#     ports:
+#       - "80:80/tcp"
+#     volumes:
+#       - ./data/nginx/conf:/etc/nginx/conf.d:rw
+#       - ./data/nginx/sites-enabled:/etc/nginx/sites-enabled:rw
+#       - ./data/nginx/log:/var/log/nginx:rw
+#       - ./data/www:/var/www:rw
+# networks:
+#   default:
+#     external:
+#       name: web-stack
+

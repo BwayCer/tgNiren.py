@@ -1,0 +1,58 @@
+doctype html
+html
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1")
+    title Telegram 小工具 (個人版)
+
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+TC")
+    link(rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css")
+    link(rel="stylesheet" href="./asset/style/reset.css")
+
+    link(rel="stylesheet" href="./asset/style/person.css")
+    script(defer src="./js/person.js")
+  body
+    section.cPaperSlip
+      .cPaperSlip_title
+        span 廣告炸群
+      .cPaperSlip_status
+      form.cPaperSlip_form
+        .cPaperSlip_form_phone
+          span 手機號碼：
+          input.markInput(
+            type="text"
+            placeholder="手機號碼"
+          )
+        .cPaperSlip_form_verifiedCode
+          span 驗證碼：
+          input.markInput(
+            type="text"
+            placeholder="驗證碼"
+          )
+        .cPaperSlip_form_roomIds
+          span 用戶/群組 ID：
+          input.markInput(
+            type="text"
+            placeholder="用戶/群組 ID (以逗點分隔)"
+          )
+          .cPaperSlip_form_roomIds_csvUpload
+            | （CSV 批量匯入：
+            input.markInput(
+              type="file"
+            )
+            | ）
+        .cPaperSlip_form_startIdx
+          span 發送對象起始位置：
+          input.markInput(
+            type="number"
+            placeholder="引索數值"
+          )
+        .cPaperSlip_form_sourceLink
+          span 被轉發的群組來源 ID：
+          input.markInput(
+            type="text"
+            placeholder="被轉發的來源鏈結"
+          )
+        button.cPaperSlip_form_submit
+          span 下一步
+

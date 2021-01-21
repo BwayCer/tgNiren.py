@@ -168,12 +168,12 @@ async def _getNiUsersStatusInfo_handle():
         'usableCount': allCount - lockCount,
     }
 
-async def getNiUsersStatusInfo():
+def getNiUsersStatusInfo():
     global _getNiUsersStatusInfo_task
     task = _getNiUsersStatusInfo_task
     if task == None or task.done():
         task = _getNiUsersStatusInfo_task \
             = asyncio.create_task(_getNiUsersStatusInfo_handle())
 
-    return await asyncio.wrap_future(task)
+    return asyncio.wrap_future(task)
 

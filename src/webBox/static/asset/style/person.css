@@ -1,0 +1,38 @@
+body {
+  font-family: "Noto Sans TC";
+}
+
+.cPaperSlip {
+  padding: 1em;
+}
+.cPaperSlip_title {
+  margin: 0.6em 0 1em;
+}
+.cPaperSlip_title span {
+  font-size: 1.4em;
+}
+.cPaperSlip_status {
+  margin: 1em 0.4em;
+}
+.cPaperSlip_form > * {
+  margin: 0.4em;
+  display: block;
+}
+.cPaperSlip_form > * .markInput {
+  margin-left: 1em;
+  padding: 0.2em;
+}
+.cPaperSlip_form_roomIds .markInput {
+  width: 18em;
+}
+.cPaperSlip_form_roomIds_csvUpload {
+  display: block;
+}
+.cPaperSlip_form_roomIds_csvUpload span {
+  font-size: 0.6em;
+}
+.cPaperSlip_form_roomIds_csvUpload .markInput {
+  vertical-align: middle;
+}
+
+/*# sourceMappingURL=person.css.map */

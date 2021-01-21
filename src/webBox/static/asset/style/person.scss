@@ -1,0 +1,55 @@
+
+body {
+  font-family: 'Noto Sans TC';
+}
+
+
+@mixin scSectionItem() {
+  padding: 1em;
+
+  &_title {
+    margin: 0.6em 0 1em;
+
+    span {
+      font-size: 1.4em;
+    }
+  }
+  &_status {
+     margin: 1em 0.4em;
+  }
+  &_form {
+    > * {
+      margin: 0.4em;
+      display: block;
+
+      .markInput {
+        margin-left: 1em;
+        padding: 0.2em;
+      }
+    }
+  }
+}
+
+.cPaperSlip {
+  @include scSectionItem;
+
+  &_form {
+    &_roomIds {
+      .markInput {
+        width: 18em;
+      }
+
+      &_csvUpload {
+        display: block;
+
+        span {
+          font-size: 0.6em;
+        }
+        .markInput {
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+}
+

@@ -43,6 +43,7 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         await client(telethon.functions.channels.JoinChannelRequest(
             channel = toGroupPeer
         ))
+        await asyncio.sleep(3)
 
     print('-> 紫爆 Hi')
     pushErrMsg = ''

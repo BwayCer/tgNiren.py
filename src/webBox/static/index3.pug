@@ -1,0 +1,186 @@
+doctype html
+html
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1")
+    title Telegram 小工具
+
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+TC")
+    link(rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons")
+    link(rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css")
+    link(rel="stylesheet" href="./asset/style/reset.css")
+
+    link(rel="stylesheet" href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css")
+    script(defer src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js")
+
+    // link(rel="stylesheet" href="./asset/lib/scrollPage.js/lib/scrollPage.css")
+    link(rel="stylesheet" href="./asset/style/main.css")
+    // script(defer src="./asset/lib/scrollPage.js/lib/scrollPage.js")
+    // script(defer src="./js/EventIntervalManager.js")
+    // script(defer type="module" src="./js/main.js")
+    script(defer src="./js/main.js")
+  body
+    section.cToolBox
+      .cToolBox_pickNiren
+        .cMdcDialog.cToolBox_pickNiren_loginBox
+          button.mdc-fab.mdc-fab--extended.cMdcDialog_btn.cToolBox_pickNiren_loginBox_btn
+            .mdc-fab__ripple
+            i.material-icons.mdc-fab__icon add
+            span.mdc-fab__label 建立新帳號
+          .mdc-dialog.cMdcDialog_dialog.cToolBox_pickNiren_loginBox_dialog
+            .mdc-dialog__container
+              .mdc-dialog__surface
+                h2.mdc-dialog__title
+                  | 登入
+                .mdc-dialog__content.cToolBox_pickNiren_loginBox_dialog_content
+                  .makeField
+                    .mdc-text-field.makeField_input
+                      input.mdc-text-field__input
+                      .mdc-line-ripple
+                      label.mdc-floating-label 手機號碼
+                    button.mdc-fab.mdc-fab--extended.makeField_submit
+                      .mdc-fab__ripple
+                      span.mdc-fab__label 送出手機號碼
+                  .makeField
+                    .mdc-text-field.makeField_input
+                      input.mdc-text-field__input
+                      .mdc-line-ripple
+                      label.mdc-floating-label 驗證碼
+                    button.mdc-fab.mdc-fab--extended.makeField_submit
+                      .mdc-fab__ripple
+                      span.mdc-fab__label 送出驗證碼
+                footer.mdc-dialog__actions
+                  button.mdc-button.mdc-dialog__button(type='button', data-mdc-dialog-action='close')
+                    .mdc-button__ripple
+                    span.mdc-button__label 取消
+                  // button.mdc-button.mdc-dialog__button(type='button', data-mdc-dialog-action='no')
+                    // .mdc-button__ripple
+                    // span.mdc-button__label No
+                  // button.mdc-button.mdc-dialog__button(type='button', data-mdc-dialog-action='yes')
+                    // span.mdc-button__label Yes
+                  // button.mdc-button.mdc-dialog__button(type='button', data-mdc-dialog-action='accept')
+                    // span.mdc-button__label OK
+                  // button.mdc-button.mdc-dialog__button(type='button', data-mdc-dialog-action='accept', data-mdc-dialog-button-default='')
+                    // span.mdc-button__label OK
+            .mdc-dialog__scrim
+        ul.mdc-list.mdc-list--two-line.cToolBox_pickNiren_itemWrap
+          li.mdc-list-item.cToolBox_pickNiren_item
+            span.mdc-list-item__graphic
+              .mdc-checkbox
+                input.mdc-checkbox__native-control(type="checkbox")
+                .mdc-checkbox__background
+                  svg.mdc-checkbox__checkmark(viewBox="0 0 24 24")
+                    path.mdc-checkbox__checkmark-path(fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59")
+                  .mdc-checkbox__mixedmark
+            span.mdc-list-item__text
+              span.mdc-list-item__primary-text Option 1
+              span.mdc-list-item__secondary-text Carrots
+          li.mdc-list-item.cToolBox_pickNiren_item
+            span.mdc-list-item__graphic
+              .mdc-checkbox
+                input.mdc-checkbox__native-control(type="checkbox" checked)
+                .mdc-checkbox__background
+                  svg.mdc-checkbox__checkmark(viewBox="0 0 24 24")
+                    path.mdc-checkbox__checkmark-path(fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59")
+                  .mdc-checkbox__mixedmark
+            span.mdc-list-item__text
+              span.mdc-list-item__primary-text Option 2
+              span.mdc-list-item__secondary-text can use
+          li.mdc-list-item.cToolBox_pickNiren_item
+            span.mdc-list-item__graphic
+              .mdc-checkbox
+                input.mdc-checkbox__native-control(type="checkbox")
+                .mdc-checkbox__background
+                  svg.mdc-checkbox__checkmark(viewBox="0 0 24 24")
+                    path.mdc-checkbox__checkmark-path(fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59")
+                  .mdc-checkbox__mixedmark
+            span.mdc-list-item__text
+              span.mdc-list-item__primary-text Option 3
+              span.mdc-list-item__secondary-text can use
+      .cMdcTab.cToolBox_adTool
+        .mdc-tab-bar.cMdcTab_topBar
+          .mdc-tab-scroller
+            .mdc-tab-scroller__scroll-area
+              .mdc-tab-scroller__scroll-content
+                button.mdc-tab.mdc-tab--active
+                  span.mdc-tab__content
+                    span.mdc-tab__text-label 邀人入群
+                  span.mdc-tab-indicator.mdc-tab-indicator--active
+                    span.mdc-tab-indicator__content.mdc-tab-indicator__content--underline
+                  span.mdc-tab__ripple
+                button.mdc-tab.mdc-tab--active
+                  span.mdc-tab__content
+                    span.mdc-tab__text-label 廣告炸群
+                  span.mdc-tab-indicator
+                    span.mdc-tab-indicator__content.mdc-tab-indicator__content--underline
+                  span.mdc-tab__ripple
+        .cMdcTab_panelWrap
+          .cMdcTab_panel.cToolBox_adTool_panel.makeInvite.onActive
+            .markLine
+              .mdc-text-field.mdc-text-field--outlined
+                input.mdc-text-field__input(type='text')
+                .mdc-notched-outline
+                  .mdc-notched-outline__leading
+                  .mdc-notched-outline__notch
+                    label.mdc-floating-label 來源群組 ID
+                  .mdc-notched-outline__trailing
+              i.material-icons.mdc-fab__icon.cToolBox_adTool_panel_gotoIcon arrow_forward
+              .mdc-text-field.mdc-text-field--outlined
+                input.mdc-text-field__input(type='text')
+                .mdc-notched-outline
+                  .mdc-notched-outline__leading
+                  .mdc-notched-outline__notch
+                    .mdc-floating-label 前往群組 ID
+                  .mdc-notched-outline__trailing
+            button.mdc-fab.mdc-fab--extended.markSubmit
+              .mdc-fab__ripple
+              span.mdc-fab__label 送出
+          .cMdcTab_panel.cToolBox_adTool_panel.makePaperSlip
+            .markLine
+              .mdc-text-field.mdc-text-field--outlined
+                input.mdc-text-field__input(type='text')
+                .mdc-notched-outline
+                  .mdc-notched-outline__leading
+                  .mdc-notched-outline__notch
+                    .mdc-floating-label 用戶/群組 ID
+                  .mdc-notched-outline__trailing
+              .cToolBox_adTool_panel_csvUpload
+                button.mdc-fab.mdc-fab--extended.cToolBox_adTool_panel_csvUpload_btn
+                  .mdc-fab__ripple
+                  i.material-icons.mdc-fab__icon cloud_upload
+                  span.mdc-fab__label CSV 批量匯入
+                // csv 無類型 `accept='*'`
+                input.cToolBox_adTool_panel_csvUpload_input(
+                  type="file"
+                  onclick="getGroupCsvFile"
+                )
+            .mdc-text-field.mdc-text-field--textarea
+              .mdc-text-field-character-counter
+              textarea.mdc-text-field__input(
+                rows='7'
+                maxlength='4096'
+              )
+              .mdc-notched-outline
+                .mdc-notched-outline__leading
+                .mdc-notched-outline__notch
+                  .mdc-floating-label Some message
+                .mdc-notched-outline__trailing
+            .markLine
+              .cToolBox_adTool_panel_csvUpload
+                button.mdc-fab.mdc-fab--extended.cToolBox_adTool_panel_csvUpload_btn
+                  .mdc-fab__ripple
+                  i.material-icons.mdc-fab__icon cloud_upload
+                  span.mdc-fab__label 上傳圖片
+                // csv 無類型 `accept='*'`
+                input.cToolBox_adTool_panel_csvUpload_input(
+                  type="file"
+                  accept='image/*'
+                  onclick="getGroupCsvFile"
+                )
+                span.file-name(v-if='paperSlipTool.input.file')
+                  | {{ paperSlipTool.input.file.name }}
+            // v-on:click='actionPaperSlip'
+            button.mdc-fab.mdc-fab--extended.markSubmit
+              .mdc-fab__ripple
+              span.mdc-fab__label 送出
+
