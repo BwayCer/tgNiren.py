@@ -189,7 +189,7 @@
   (_ => {
     const elemAllRespondStatus = document.querySelector('.cAllRespond_status');
     const elemAllRespondLog = document.querySelector('.cAllRespond_log');
-    const elemAllRespondDialog = document.querySelector('.cAllRespond_dialog');
+    const elemAllRespondDialog = document.querySelector('.cAllRespond_dialogs');
 
     class LogRecord {
       constructor() {
@@ -225,37 +225,116 @@
     }
 
     class Dialog {
-      constructor(dialogInfos = []) {
-        this.dialogInfos = dialogInfos;
+      constructor(evtSubmitMessage) {
+        this.chatInfos = [];
+        this._evtSubmitMessage = evtSubmitMessage;
       }
 
       show() {
-        let dialogInfos = this.dialogInfos;
-        for (let idx = 0, len = dialogInfos.length; idx < len; idx++) {
-          let dialogInfo = dialogInfos[idx];
-          let elemPre = document.createElement('pre');
-          elemPre.dataset.idx = idx;
-          let dtMsg = new Date(dialogInfo.timestamp);
-          let txt = readableDate(dtMsg) + '\n';
-          txt += `${dialogInfo.chatTypeName}(${dialogInfo.chatName})`;
-          if (dialogInfo.fromTypeName !== null) {
-            txt += `: ${dialogInfo.fromTypeName}(${dialogInfo.fromName})`;
-          }
-          txt += ` -> ${dialogInfo.myId}\n`;
-          txt += `  Message:\n${dialogInfo.message}`;
-          elemPre.innerText = txt;
-          elemAllRespondDialog.appendChild(elemPre);
+        // 移除子標籤元素
+        elemAllRespondDialog.innerText = '';
+        // 加入新子標籤元素
+        this.chatInfos.forEach(
+          chatInfo => elemAllRespondDialog.appendChild(chatInfo.elem)
+        )
+      }
+
+      getShowText(dialogInfo) {
+        let dtMsg = new Date(dialogInfo.timestamp);
+        let txt = readableDate(dtMsg) + '\n';
+        txt += `${dialogInfo.chatTypeName}(${dialogInfo.chatName})`;
+        if (dialogInfo.fromTypeName !== null) {
+          txt += `: ${dialogInfo.fromTypeName}(${dialogInfo.fromName})`;
         }
+        txt += ` -> ${dialogInfo.myId}\n`;
+        txt += `  Message:\n${dialogInfo.message}`;
+        return txt;
+      }
+
+      createChatElement(id, dialogInfo) {
+        let elemPre = document.createElement('pre');
+        elemPre.innerText = this.getShowText(dialogInfo);
+
+        let elemTextarea = document.createElement('textarea');
+        elemTextarea.rows = '1';
+        let elemBtn = document.createElement('button');
+        elemBtn.innerText = '送出';
+        elemBtn.addEventListener('click', evt => this._evtToReplyHandle(evt));
+        let elemMsgBox = document.createElement('div');
+        elemMsgBox.className = 'cAllRespond_dialogs_chat_msgBox';
+        elemMsgBox.appendChild(elemTextarea);
+        elemMsgBox.appendChild(elemBtn);
+
+        let elemChat = document.createElement('div');
+        elemChat.className = 'cAllRespond_dialogs_chat';
+        elemChat.dataset.id = id;
+        elemChat.appendChild(elemPre);
+        elemChat.appendChild(elemMsgBox);
+
+        return elemChat;
+      }
+
+      _evtSubmitMessageHandle(evt) {
+        let elemChat = evt.currentTarget.parentNode.parentNode;
+
+        let elemTextarea = elemChat.querySelector('textarea');
+        if (elemTextarea === null) {
+          alert('找不到留言訊息，請嘗試重新整理。');
+          return;
+        }
+        let msg = elemTextarea.value;
+        if (msg === '') {
+          alert('請勿送出空白訊息。');
+          return;
+        }
+
+        let id = elemChat.dataset.id;
+        if (id === undefined) {
+          alert('找不到對象識別碼，請嘗試重新整理。');
+          return;
+        }
+        let chatInfo = this.chatInfos.find(chatInfo => chatInfo.id === id);
+        if (chatInfo === undefined) {
+          alert('聊天對象失效，請嘗試重新整理。');
+          return;
+        }
+
+        this._evtSubmitMessage(chatInfo.data, msg);
+      }
+
+      getChatId(dialogInfo) {
+        return dialogInfo.myId + '-' + dialogInfo.entityId.toString();
+      }
+
+      getChatInfo(dialogInfo) {
+        let id = this.getChatId(dialogInfo);
+        return {
+          id,
+          timestamp: dialogInfo.timestamp,
+          elem: this.createChatElement(id, dialogInfo),
+          data: dialogInfo,
+        };
       }
 
       update(dialogInfos) {
         if (! dialogInfos instanceof Array) {
           return;
         }
-        this.dialogInfos.length = 0;
+        this.chatInfos.length = 0;
         if (dialogInfos.length > 0) {
-          this.dialogInfos.push(...dialogInfos);
-          this.dialogInfos.sort((prev, next) => next.timestamp - prev.timestamp);
+          let oldChatInfoList = Array.from(this.chatInfos);
+          dialogInfos.reduce((accumulator, dialogInfo) => {
+            let id = this.getChatId(dialogInfo);
+            let chatInfo = oldChatInfoList.find(chatInfo => chatInfo.id === id);
+            if (chatInfo !== undefined) {
+              chatInfo.elem.querySelector('pre').innerText = this.getShowText(dialogInfo);
+            } else {
+              chatInfo = this.getChatInfo(dialogInfo);
+            }
+            accumulator.push(chatInfo);
+            return accumulator;
+          }, this.chatInfos);
+          this.chatInfos.sort((prev, next) => next.timestamp - prev.timestamp);
         }
         this.show();
       }
@@ -264,21 +343,39 @@
         if (! dialogInfos instanceof Array || dialogInfos.length <= 0) {
           return;
         }
-        this.dialogInfos.push(...dialogInfos);
-        this.dialogInfos.sort((prev, next) => next.timestamp - prev.timestamp);
+        this.chatInfos.push(
+          ...dialogInfos.map(dialogInfo => this.getChatInfo(dialogInfo))
+        );
+        this.chatInfos.sort((prev, next) => next.timestamp - prev.timestamp);
         this.show();
       }
     }
 
     let logRecord = new LogRecord();
-    let dialog = new Dialog();
+    let dialog = new Dialog(function (dialogInfo, msg) {
+      ws.send(JSON.stringify({wsId, fns: [{
+        randId: getRandomId(),
+        name: 'dialog.sendMessage',
+        prop: {
+          niUsersId: dialogInfo.myId,
+          targetId: dialogInfo.entityId,
+          targetAccessHash: dialogInfo.entityAccessHash,
+          message: msg,
+        },
+      }]}));
+    });
 
     wsMethodBox['dialog.allRespond']
       = wsMethodBox['dialog.allRespondAction']
       = function (err, result) {
         if (err) {
-          console.error(`${err.name}: ${err.message}`);
-          elemAllRespondStatus.innerText = err.message;
+          let errMsg = `${err.name}: ${err.message}`
+          if (err.stack) {
+            errMsg += '\n  stack:\n    ' + err.stack.join('\n    ');
+          }
+          console.error(errMsg);
+          elemAllRespondStatus.innerText = errMsg;
+          logRecord.push(errMsg);
           return;
         }
 
@@ -304,6 +401,31 @@
           case 'c2_noNiUser':
             dialog.update([]);
             break;
+        }
+      }
+    ;
+    wsMethodBox['dialog.sendMessage']
+      = wsMethodBox['dialog.sendMessageAction']
+      = function (err, result) {
+        if (err) {
+          let errMsg = `${err.name}: ${err.message}`
+          if (err.stack) {
+            errMsg += '\n  stack:\n    ' + err.stack.join('\n    ');
+          }
+          console.error(errMsg);
+          elemAllRespondStatus.innerText = errMsg;
+          logRecord.push(errMsg);
+          return;
+        }
+
+        elemAllRespondStatus.innerText = result.message;
+        logRecord.push(result.message);
+
+        console.log(result);
+        if (result.code < 0) {
+          alert('訊息寄送失敗，請查看日誌訊息。');
+        } else if (result.code === 2) {
+          alert('訊息成功送出。 (若要更新訊息請重新整理。)');
         }
       }
     ;

@@ -12,7 +12,7 @@ import webBox.app.utils as appUtils
 from tgkream.tgTool import knownError, telethon, TgDefaultInit, TgBaseTool
 
 
-__all__ = ['allRespond']
+__all__ = ['allRespond', 'sendMessage']
 
 
 _getRespondDialog_task = None
@@ -224,6 +224,189 @@ async def _allRespondAction(runId: str) -> dict:
             await tgTool.release()
         appUtils.console.logMsg(runId, '讀取對話狀態回復。')
 
+async def sendMessage(pageId: str, wsId: str, prop: typing.Any = None) -> dict:
+    if type(prop) != dict:
+        return {
+            'code': -1,
+            'message': '"prop" 參數必須是 `Object` 類型。',
+        }
+    if not ('niUsersId' in prop and type(prop['niUsersId']) == str):
+        return {
+            'code': -1,
+            'message': '"prop.niUsersId" 參數不符合預期',
+        }
+    if not ('targetId' in prop and type(prop['targetId']) == str):
+        return {
+            'code': -1,
+            'message': '"prop.targetId" 參數不符合預期',
+        }
+    if not ('targetAccessHash' in prop and type(prop['targetAccessHash']) == str):
+        return {
+            'code': -1,
+            'message': '"prop.targetAccessHash" 參數不符合預期',
+        }
+    if not ('message' in prop and type(prop['message']) == str):
+        return {
+            'code': -1,
+            'message': '"prop.message" 參數不符合預期',
+        }
+
+    runId = random.randrange(1000000, 9999999)
+
+    global _getRespondDialog_task
+    task = _getRespondDialog_task
+
+    if task == None or not task.done():
+        return {
+            'code': -1,
+            'messageType': 'notReadDialog',
+            'message': appUtils.console.log(
+                runId, _sendMessageMessage, 'notReadDialog'
+            ),
+        }
+
+    dialogInfo = None
+    for info in _prevRespondDialogInfo['dialogs']:
+        if prop['niUsersId'] == info['myId'] \
+                and prop['targetId'] == info['entityId'] \
+                and prop['targetAccessHash'] == info['entityAccessHash']:
+            dialogInfo = info
+            break
+    if dialogInfo == None:
+        return {
+            'code': -1,
+            'messageType': 'notFindDialog',
+            'message': appUtils.console.log(
+                runId, _sendMessageMessage, 'notFindDialog'
+            ),
+        }
+
+    targetTypeName = dialogInfo['entityTypeName']
+    if targetTypeName != 'Chat' \
+            and targetTypeName != 'User' \
+            and targetTypeName != 'Channel':
+        return {
+            'code': -1,
+            'messageType': 'notFindDialog',
+            'message': appUtils.console.log(
+                runId, _sendMessageMessage, 'entityTypeInvalid', targetTypeName
+            ),
+        }
+
+    asyncio.ensure_future(_sendMessageAction(runId, wsId, {
+        'niUsersId': prop['niUsersId'],
+        'targetId': prop['targetId'],
+        'targetAccessHash': prop['targetAccessHash'],
+        'targetTypeName': targetTypeName,
+        'targetName': dialogInfo['chatName'],
+        'message': prop['message'],
+    }))
+    return {
+        'code': 0,
+        'messageType': 'requestReceived',
+        'message': appUtils.console.log(
+            runId, _sendMessageMessage, 'requestReceived'
+        ),
+    }
+
+async def _sendMessageAction(runId: str, wsId: str, data: dict):
+    logName = 'sendMessageAction'
+    latestStatus = '初始化...'
+    isCreatedTgTool = False
+    try:
+        niUsersId = data['niUsersId']
+        targetId = int(data['targetId'])
+        targetAccessHash = int(data['targetAccessHash'])
+        targetTypeName = data['targetTypeName']
+        targetName = data['targetName']
+        message = data['message']
+
+        tgTool = TgDefaultInit(
+            TgBaseTool,
+            clientCount = 1,
+            papaPhone = novice.py_env['papaPhoneNumber']
+        )
+        isCreatedTgTool = True
+        client = await tgTool.login(niUsersId)
+        if client == None:
+            await _asyncLogSend(wsId, logName, {
+                'code': -1,
+                'messageType': 'niUserIsBusy',
+                'message': appUtils.console.log(
+                    runId, _sendMessageMessage, 'niUserIsBusy'
+                ),
+            })
+            return
+
+        targetPeer = ''
+        if targetTypeName == 'Chat':
+            targetPeer = telethon.types.InputPeerChat(
+                chat_id = targetId
+            )
+        elif targetTypeName == 'User':
+            targetPeer = telethon.types.InputPeerUser(
+                user_id = targetId,
+                access_hash = targetAccessHash
+            )
+        elif targetTypeName == 'Channel':
+            telethon.types.InputPeerChannel(
+                channel_id = targetId,
+                access_hash = targetAccessHash
+            )
+
+        latestStatus = appUtils.console.log(
+            runId, _sendMessageMessage, 'sendMessage', niUsersId, targetName, ''
+        )
+        await _asyncLogSend(wsId, logName, {
+            'code': 1,
+            'messageType': 'sendMessage',
+            'message': latestStatus,
+        })
+        try:
+            print(targetPeer)
+            await client(telethon.functions.messages.SendMessageRequest(
+                peer = targetPeer,
+                message = message,
+                random_id = tgTool.getRandId()
+            ))
+            await _asyncLogSend(wsId, logName, {
+                'code': 2,
+                'messageType': 'sendMessage',
+                'message': appUtils.console.log(
+                    runId, _sendMessageMessage, 'sendMessage',
+                    niUsersId, targetName, ' ok'
+                ),
+            })
+        except Exception as err:
+            if knownError.has('SendMessageRequest', err):
+                errTypeName = err.__class__.__name__
+                errMsg = knownError.getMsg('SendMessageRequest', err)
+            else:
+                errTypeName = type(err)
+                errMsg = err
+
+            await _asyncLogSend(wsId, logName, {
+                'code': -1,
+                'messageType': 'sendMessageError',
+                'message': appUtils.console.catchError(
+                    runId, 'client(messages.SendMessageRequest)',
+                    _sendMessageMessage, 'sendMessageError',
+                    niUsersId, targetName, errTypeName, errMsg
+                ),
+            })
+    except Exception as err:
+        errMsg = novice.sysTracebackException()
+        latestStatus += ' (失敗)' + '\n' + errMsg
+        await _asyncLogSend(wsId, logName, {
+            'code': -1,
+            'messageType': 'error',
+            'message': appUtils.console.errorMsg(runId, latestStatus),
+        })
+    finally:
+        if isCreatedTgTool:
+            await tgTool.release()
+        appUtils.console.logMsg(runId, '傳送訊息狀態回復。')
+
 
 _allRespondMessage = {
     # -1 程式錯誤
@@ -236,6 +419,19 @@ _allRespondMessage = {
     'noNiUser': '沒有可用的仿用戶或仿用戶忙線中。',
     'complete': '全部讀取完成。',
     'record': '讀取過往紀錄。',
+}
+
+_sendMessageMessage = {
+    # -1 程式錯誤
+    'notReadDialog': '請先讀取對話或等待對話完全讀取完成。',
+    'notFindDialog': '對話已過期，請嘗試重新整理。',
+    'entityTypeInvalid': '對話對象類型無效。 ({})',
+    'niUserIsBusy': '仿用戶忙碌中，請稍後再嘗試。',
+    'sendMessageError': '傳送訊息： {} -> {} get {} Error: {}',
+    # 0 請求已接收
+    'requestReceived': '請求已接收。',
+    # 1 & 2
+    'sendMessage': '傳送訊息： {} -> {}{}',
 }
 
 async def _getDialogInfo(
@@ -271,8 +467,9 @@ async def _getDialogInfo(
             return None
 
     return {
-        'entityId': peerInfo['id'],
-        'entityAccessHash': peerInfo['accessHash'],
+        'entityId': str(peerInfo['id']),
+        # 超過 JS 處理數字的極限
+        'entityAccessHash': str(peerInfo['accessHash']),
         'entityTypeName': peerInfo['entityTypeName'],
         'chatTypeName': peerInfo['chatTypeName'],
         'chatName': peerInfo['name'],
