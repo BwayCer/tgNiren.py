@@ -189,6 +189,9 @@
   (_ => {
     const elemAllRespondStatus = document.querySelector('.cAllRespond_status');
     const elemAllRespondLog = document.querySelector('.cAllRespond_log');
+    const elemAllRespondReply = document.querySelector('.cAllRespond_reply');
+    const elemAllRespondUpdateTimerBtn
+      = document.querySelector('.cAllRespond_updateTimer_btn');
     const elemAllRespondDialog = document.querySelector('.cAllRespond_dialogs');
 
     class LogRecord {
@@ -255,14 +258,11 @@
         let elemPre = document.createElement('pre');
         elemPre.innerText = this.getShowText(dialogInfo);
 
-        let elemTextarea = document.createElement('textarea');
-        elemTextarea.rows = '1';
         let elemBtn = document.createElement('button');
-        elemBtn.innerText = '送出';
+        elemBtn.innerText = '回覆';
         elemBtn.addEventListener('click', evt => this._evtToReplyHandle(evt));
         let elemMsgBox = document.createElement('div');
         elemMsgBox.className = 'cAllRespond_dialogs_chat_msgBox';
-        elemMsgBox.appendChild(elemTextarea);
         elemMsgBox.appendChild(elemBtn);
 
         let elemChat = document.createElement('div');
@@ -274,10 +274,58 @@
         return elemChat;
       }
 
+      createReplyChatElement(id, dialogInfo) {
+        let elemPre = document.createElement('pre');
+        elemPre.innerText = this.getShowText(dialogInfo);
+
+        let elemTextarea = document.createElement('textarea');
+        elemTextarea.className = 'markInput';
+        elemTextarea.rows = '1';
+        elemTextarea.placeholder = '輸入訊息';
+        let elemBtn = document.createElement('button');
+        elemBtn.innerText = '送出';
+        elemBtn.addEventListener('click', evt => this._evtSubmitMessageHandle(evt));
+        let elemMsgBox = document.createElement('div');
+        elemMsgBox.className = 'cAllRespond_reply_chat_msgBox';
+        elemMsgBox.appendChild(elemTextarea);
+        elemMsgBox.appendChild(elemBtn);
+
+        let elemChat = document.createElement('div');
+        elemChat.className = 'cAllRespond_reply_chat';
+        elemChat.dataset.id = id;
+        elemChat.appendChild(elemPre);
+        elemChat.appendChild(elemMsgBox);
+
+        return elemChat;
+      }
+
+      _evtToReplyHandle(evt) {
+        let elemChat = evt.currentTarget.parentNode.parentNode;
+
+        let id = elemChat.dataset.id;
+        if (id === undefined) {
+          alert('找不到對象識別碼，請嘗試重新整理。');
+          return;
+        }
+        let chatInfo = this.chatInfos.find(chatInfo => chatInfo.id === id);
+        if (chatInfo === undefined) {
+          alert('聊天對象失效，請嘗試重新整理。');
+          return;
+        }
+
+        elemAllRespondReply.classList.add('esOpen');
+        elemAllRespondReply.innerText = '';
+        let elemReplyChat = this.createReplyChatElement(id, chatInfo.data);
+        elemAllRespondReply.appendChild(elemReplyChat);
+        // window.scrollTo(0, elemAllRespondReply.offsetTop - 32);
+        window.scrollTo(0, 0);
+        elemReplyChat.querySelector('.markInput').focus();
+      }
+
       _evtSubmitMessageHandle(evt) {
         let elemChat = evt.currentTarget.parentNode.parentNode;
 
-        let elemTextarea = elemChat.querySelector('textarea');
+        let elemTextarea = elemChat.querySelector('.markInput');
         if (elemTextarea === null) {
           alert('找不到留言訊息，請嘗試重新整理。');
           return;
@@ -365,10 +413,14 @@
       }]}));
     });
 
+    let isUpdating = false;
+
     wsMethodBox['dialog.allRespond']
       = wsMethodBox['dialog.allRespondAction']
       = function (err, result) {
         if (err) {
+          isUpdating = false;
+
           let errMsg = `${err.name}: ${err.message}`
           if (err.stack) {
             errMsg += '\n  stack:\n    ' + err.stack.join('\n    ');
@@ -383,6 +435,14 @@
         logRecord.push(result.message);
 
         console.log(result);
+
+        let resultCode = result.code;
+        if (resultCode === 0) {
+          isUpdating = true;
+        } else if (resultCode < 0 || 2 <= resultCode) {
+          isUpdating = false;
+        }
+
         let respondDialogInfo;
         switch (`c${String(result.code)}_${result.messageType}`) {
           case 'c1_addNew':
@@ -425,13 +485,50 @@
         if (result.code < 0) {
           alert('訊息寄送失敗，請查看日誌訊息。');
         } else if (result.code === 2) {
-          alert('訊息成功送出。 (若要更新訊息請重新整理。)');
+          elemAllRespondReply.classList.remove('esOpen');
+          alert('訊息成功送出。');
         }
       }
     ;
 
     elemAllRespondStatus.innerText = '請求已送出';
     logRecord.push('讀取對話紀錄請求已送出');
+
+    let updateTimer = null;
+    function updateTimerHandle(dt) {
+      let dtPoint;
+      let now = +new Date();
+      let timeMs = 30000 - now + dt;
+      if (isUpdating) {
+        dtPoint = now;
+      } else if (timeMs < 0) {
+        ws.send(JSON.stringify({wsId, fns: [{
+          randId: getRandomId(),
+          name: 'dialog.allRespond',
+          prop: null,
+        }]}));
+        elemAllRespondUpdateTimerBtn.classList.add('esStop');
+        elemAllRespondUpdateTimerBtn.innerText = '日誌更新中...';
+        dtPoint = now;
+      } else {
+        elemAllRespondUpdateTimerBtn.classList.remove('esStop');
+        elemAllRespondUpdateTimerBtn.innerText = `在 ${Math.floor(timeMs / 1000)} 秒後更新`;
+        dtPoint = dt;
+      }
+      updateTimer = setTimeout(updateTimerHandle, 999, dtPoint);
+    }
+    let isEnableAutoUpdate = true;
+    elemAllRespondUpdateTimerBtn.addEventListener('click', function (evt) {
+      isEnableAutoUpdate = !isEnableAutoUpdate;
+      if (isEnableAutoUpdate) {
+        updateTimerHandle(+new Date());
+      } else {
+        clearTimeout(updateTimer);
+        elemAllRespondUpdateTimerBtn.classList.add('esStop');
+        evt.currentTarget.innerText = '啟用自動更新';
+      }
+    });
+    elemAllRespondUpdateTimerBtn.click();
 
     ws.send(JSON.stringify({wsId, fns: [{
       randId: getRandomId(),

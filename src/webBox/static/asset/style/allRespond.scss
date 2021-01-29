@@ -35,7 +35,7 @@ body {
     }
   }
 
-  &_dialogs {
+  &_reply, &_dialogs {
      margin: 2em 0.4em;
 
      &_chat {
@@ -72,6 +72,33 @@ body {
          }
        }
      }
+  }
+  &_reply {
+    margin-bottom: 5em;
+    padding-bottom: 2em;
+    border-bottom: 6px #000 double;
+    display: none;
+
+    &.esOpen {
+      display: block;
+    }
+  }
+  &_updateTimer {
+    &_btn {
+      font-size: 16px;
+      margin: 0 0.4em;
+      padding: 0.2em 0.6em;
+      border-radius: 6px;
+      border: 3px #056d30 solid;
+      background: #03893b;
+      color: #fff;
+
+      &.esStop {
+        border: 3px #8d938f solid;
+        background: #bfc4c1;
+        color: #000;
+      }
+    }
   }
 }
 

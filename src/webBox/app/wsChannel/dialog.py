@@ -16,7 +16,7 @@ __all__ = ['allRespond', 'sendMessage']
 
 
 _getRespondDialog_task = None
-_updateIntervalTimedelta = datetime.timedelta(seconds = 10 * 6)
+_updateIntervalTimedelta = datetime.timedelta(seconds = 10 * 3)
 _prevTimestamp = novice.dateUtcNow() - _updateIntervalTimedelta
 _tgAppMain = novice.py_env['tgApp']['main']
 _listenWsId = []
