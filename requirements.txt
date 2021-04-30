@@ -14,7 +14,7 @@ pyaes==1.6.1
 pyasn1==0.4.8
 PyYAML==5.3
 Quart==0.11.2
-rsa==4.0
+rsa==4.7
 sortedcontainers==2.1.0
 Telethon==1.10.10
 toml==0.10.0
