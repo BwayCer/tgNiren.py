@@ -1,0 +1,44 @@
+
+---
+## PersistentVolumeClaim
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tg-niren-envfile
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 128Mi
+
+
+---
+## pod
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pvc-container-pod
+spec:
+  containers:
+    - name: pvc-tg-niren-envfile-container
+      image: us.gcr.io/tg-tool/k8small:latest
+      resources:
+        limits:
+          cpu: 40m
+      volumeMounts:
+        - name: tg-niren-envfile-volume
+          mountPath: /app/tg-niren-envfile
+      # readinessProbe:
+      #  exec:
+      #    command:
+      #    - cat
+      #    - /tmp/healthy
+      #  initialDelaySeconds: 5
+      #  periodSeconds: 30
+  volumes:
+    - name: tg-niren-envfile-volume
+      persistentVolumeClaim:
+        claimName: tg-niren-envfile

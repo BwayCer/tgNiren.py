@@ -1,0 +1,51 @@
+
+---
+## deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tg-niren-deployment
+spec:
+  selector:
+    matchLabels:
+      app: tg-niren-pod
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: tg-niren-pod
+    spec:
+      containers:
+      - name: tg-niren-container
+        image: us.gcr.io/tg-tool/tg-niren:latest
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            memory: 100Mi
+          limits:
+            cpu: 100m
+        volumeMounts:
+          - name: tg-niren-envfile-volume
+            mountPath: /app/envfile
+      volumes:
+      - name: tg-niren-envfile-volume
+        persistentVolumeClaim:
+          claimName: tg-niren-envfile
+
+---
+## service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: tg-niren-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: tg-niren-pod
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 5000
