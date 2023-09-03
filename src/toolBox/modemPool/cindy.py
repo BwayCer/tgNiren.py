@@ -84,8 +84,11 @@ def _run_add(modemCardsFilePath: str):
         modemPoolTable = ModemPoolTable(_modemPoolDataFilePath)
         regeCindyVoipTxt = r'^(\d+)\|([0-9a-fA-F]+)\n$'
 
+        totalCount = 0
+        addCount = 0
         lines = fs.readlines()
         for line in lines:
+            totalCount += 1
             matchTgCode = re.search(regeCindyVoipTxt, line)
 
             if not matchTgCode:
@@ -93,10 +96,20 @@ def _run_add(modemCardsFilePath: str):
 
             phone = matchTgCode.group(1)
             token = matchTgCode.group(2)
+
+            modemCardInfo = modemPoolTable.whichPhone('1' + phone)
+            if modemCardInfo != None and token == modemCardInfo['token']:
+                continue
+
+            addCount += 1
             modemPoolTable.addModemCard('1' + phone, token, smsUrlFormat)
 
         modemPoolTable.gatherModemCardInfo()
         modemPoolTable.store()
+        print(
+            f'成功新增 {addCount} 份貓卡名單。'
+            + ('' if addCount == totalCount else f' (排除 {totalCount - addCount} 份)')
+        )
 
 async def _run_smsScan(needCount: typing.Union[None, int]):
     modemPoolTable = ModemPoolTable(_modemPoolDataFilePath)
@@ -165,20 +178,32 @@ async def _run_autoSignUp(
 
     try:
         currNeedCount = needCount
+        scanLastSuccessCount = 0
+        scanPhones = []
         singUpInfo = {
             'needCount': needCount,
             'successCount': 0,
         }
-        for _ in range(0, 3):
-            scanInfo = await _smsScan(modemPoolTable, scanTgSignUpTool, currNeedCount)
+        for loopTimes in range(1, 4):
+            if loopTimes > 1:
+                print(f'第 {loopTimes} 次嘗試自動註冊。')
+
+            scanInfo = await _smsScan(
+                modemPoolTable, scanTgSignUpTool, currNeedCount,
+                shareStore = {
+                    'scanPhones': scanPhones,
+                }
+            )
+            scanLastSuccessCount = scanInfo['successCount']
+            scanPhones = [*scanPhones, *scanInfo['scanPhones']]
 
             # 沒有可註冊的用戶
-            if scanInfo['successCount'] == 0:
+            if scanLastSuccessCount == 0:
                 break
 
             modemPoolTable.gatherSmsScanInfo(
                 scanInfo['scanCount'],
-                scanInfo['successCount']
+                scanLastSuccessCount
             )
 
             runTasks = []
@@ -196,6 +221,22 @@ async def _run_autoSignUp(
                 currNeedCount = needCount - successCount
             else:
                 break
+
+        scanPhoneCount = len(scanPhones)
+        successCount = singUpInfo['successCount']
+        if successCount == 0:
+            print(
+                f'共掃描 {scanPhoneCount} 張號碼但皆無法註冊。'
+                ' (可註冊的用戶數量不足)' if scanLastSuccessCount == 0 else \
+                    ' (請稍後再嘗試一次)'
+            )
+        else:
+            print(
+                f'共掃描 {scanPhoneCount} 張號碼並成功註冊 {successCount} 個仿用戶。'
+                '' if successCount >= currNeedCount else \
+                    ' (可註冊的用戶數量不足)' if scanLastSuccessCount == 0 else \
+                    ' (數量不足，請稍後再嘗試一次)'
+            )
 
         modemPoolTable.gatherModemCardInfo()
         modemPoolTable.store()
@@ -278,6 +319,10 @@ class ModemPoolTable():
         if not 'modemCardInfos' in self.data:
             self.data['modemCardInfos'] = []
 
+        self.allPhones = allPhones = []
+        for info in self.data['modemCardInfos']:
+            allPhones.append(info['phone'])
+
     status = {
         'INVALID': 'invalid',
         'NEVER': 'never',
@@ -289,6 +334,7 @@ class ModemPoolTable():
     }
 
     def addModemCard(self, phoneNumber: str, token: str, smsUrlFormat: str):
+        self.allPhones.append(phoneNumber)
         self.data['modemCardInfos'].append({
             'state': self.status['NEVER'],
             'connectState': None,
@@ -300,6 +346,14 @@ class ModemPoolTable():
 
     def store(self) -> None:
         utils.json.dump(self.data, self.filePath)
+
+    def whichPhone(self, phoneNumber: str) -> typing.Union[None, dict]:
+        if phoneNumber in self.allPhones:
+            for info in self.data['modemCardInfos']:
+                if info['phone'] == phoneNumber:
+                    return info
+
+        return None
 
     def filter(self, states: typing.Union[None, str, list] = None) -> list:
         if type(states) == str:
@@ -355,12 +409,14 @@ class ModemPoolTable():
         readableDtUtc = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
         successScanRate = math.floor(successCount / scanCount * 10000) / 100
+        canScanCount = len(self.filter(states = ['NEVER', 'TRIED']))
         txt = f'{successCount}/{scanCount} ({successScanRate}%)'
 
         self.data['statistic']['smsScan'].append({
             'date': readableDtUtc,
             'scanCount': scanCount,
             'successCount': successCount,
+            'canScanCount': canScanCount,
             'text': txt,
         })
         return txt
@@ -742,7 +798,7 @@ class TgSignUpTool():
     async def callNiUser(self,
             client: TelegramClient,
             groupPeer: str,
-            txt: str = '') -> typing.Tuple[
+            message: str = '') -> typing.Tuple[
                 str,
                 typing.Union[None, str],
                 typing.Union[None, Exception, telethon.types.Updates]
@@ -752,7 +808,7 @@ class TgSignUpTool():
             return (self.callNiUserStatus['WHOAMI'], None, None)
 
         try:
-            update = await self.sayHi(client, groupPeer, f'I\'m {myName}')
+            update = await self.sayHi(client, groupPeer, message)
             return (self.callNiUserStatus['OK'], myName, update)
         except Exception as err:
             return (self.callNiUserStatus['NOTPRESENT'], myName, err)
@@ -791,6 +847,7 @@ async def _smsScan(
             'needCount': needCount,
             'scanCount': 0,
             'successCount': 0,
+            'scanPhones': [],
             'successModemCardInfos': [],
         }
     else:
@@ -800,16 +857,24 @@ async def _smsScan(
             shareStore['scanCount'] = 0
         if not 'successCount' in shareStore:
             shareStore['successCount'] = 0
+        if not 'scanPhones' in shareStore:
+            shareStore['scanPhones'] = []
         if not 'successModemCardInfos' in shareStore:
             shareStore['successModemCardInfos'] = []
 
     currNeedCount = needCount
+    scanPhones = shareStore['scanPhones']
     scanTaskAmount = currNeedCount * scanTaskMultiple
     if scanTaskAmount > scanTaskMax:
         scanTaskAmount = scanTaskMax
     runTasks = []
     for modemCardInfo in modemCardInfos:
         phoneNumber = modemCardInfo['phone']
+        if phoneNumber in scanPhones:
+            continue
+        else:
+            scanPhones.append(phoneNumber)
+
         isTimeout, _ = _inputTimeout(
             confirmTimeoutSec,
             f'[_smsScan]: +{phoneNumber}'
@@ -850,7 +915,9 @@ async def _smsScanHandle(
     smsUrl = modemCardInfo['smsUrl']
 
     try:
-        connectStete, _, _ = await tgSignUpTool.connect(phoneNumber)
+        connectStete, client, _ = await tgSignUpTool.connect(phoneNumber)
+        if client != None:
+            await client.disconnect()
     except Exception as err:
         modemPoolTable.updateItem(
             modemCardInfo,
@@ -861,7 +928,7 @@ async def _smsScanHandle(
 
     if connectStete != TgSignUpTool.connectStatus['SENDBYSMS']:
         if connectStete == TgSignUpTool.connectStatus['LOGINING']:
-            print(f'[_smsScanHandle]: +{phoneNumber} 已登入，請清除掃描用的 session')
+            print(f'[_smsScanHandle]: +{phoneNumber} 已登入，請清除掃描用的 session。')
             tgSignUpTool.mvSessionPath(phoneNumber, 'scanHasLogined')
         elif connectStete == TgSignUpTool.connectStatus['HASBANNED']:
             # The used phone number has been banned from Telegram and cannot be used any more.
@@ -944,6 +1011,8 @@ async def _autoSignUpHandle(
             if isSuccess:
                 shareStore['successCount'] += 1
                 tgSignUpTool.mvSessionPath(phoneNumber, '')
+            else:
+                tgSignUpTool.mvSessionPath(phoneNumber, 'whoami')
         elif connectStete == TgSignUpTool.connectStatus['HASBANNED']:
             print(f'[_autoSignUpHandle]: +{phoneNumber} has been banned.')
             modemPoolTable.updateItem(
@@ -964,6 +1033,8 @@ async def _autoSignUpHandle(
             )
             tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpErr')
 
+        if client != None:
+            await client.disconnect()
         return
 
     fullName, firstName, lastName = randomName.get()
@@ -982,6 +1053,7 @@ async def _autoSignUpHandle(
                 connectStateTxt = f'{signUpRunScanGetErrorMsg}{requestSmsState}'
             )
             tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpErr')
+            break
 
         if shareStore['successCount'] >= shareStore['needCount']:
             break
@@ -1006,6 +1078,8 @@ async def _autoSignUpHandle(
             if isSuccess:
                 shareStore['successCount'] += 1
                 tgSignUpTool.mvSessionPath(phoneNumber, '')
+            else:
+                tgSignUpTool.mvSessionPath(phoneNumber, 'whoami')
             break
 
         if tryRemainingTime > 0 and (
@@ -1023,6 +1097,8 @@ async def _autoSignUpHandle(
         )
         tgSignUpTool.mvSessionPath(phoneNumber, 'autoSignUpErr')
         break
+
+    await client.disconnect()
 
 async def _autoSignUpHandle_callNiUser(
         modemCardInfo: dict,
@@ -1074,6 +1150,7 @@ async def _checkOkHandle(
             f'[_checkOkHandle]: +{phoneNumber} '
             f'Hi, I\'m {myName}.' if myName != None else 'say hi.'
         )
+        await client.disconnect()
         return
 
     shareStore['exitedCount'] += 1
