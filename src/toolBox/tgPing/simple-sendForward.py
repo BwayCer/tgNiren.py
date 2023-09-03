@@ -65,16 +65,13 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
                 elif sendForwardMethod == 'joinChannel':
                     print('---> 加入聊天室')
                     try:
-                        # inputPeer = await client.get_entity(forwardPeer)
-                        # if type(inputPeer) != telethon.types.User:
-                        #     print('----> client(functions.channels.JoinChannelRequest)')
-                        #     await client(telethon.functions.channels.JoinChannelRequest(
-                        #         channel = forwardPeer
-                        #     ))
-                        print('----> client(functions.channels.JoinChannelRequest)')
-                        await client(telethon.functions.channels.JoinChannelRequest(
-                            channel = forwardPeer
-                        ))
+                        inputEntity = await client.get_input_entity(forwardPeer)
+                        novice.logNeedle.push(f'----> {type(inputEntity)}.')
+                        if type(inputEntity) != telethon.types.InputPeerUser:
+                            print('----> client(functions.channels.JoinChannelRequest)')
+                            await client(telethon.functions.channels.JoinChannelRequest(
+                                channel = forwardPeer
+                            ))
                         sendForwardMethod = 'forwardMessages'
                     except ValueError as err:
                         print('ValueError Error: {} (from: {})'.format(

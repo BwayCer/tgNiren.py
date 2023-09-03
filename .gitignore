@@ -1,5 +1,6 @@
 
 .dockerignore
+!**/.dockerignore
 
 **/__pycache__/
 Pipfile.lock
@@ -7,4 +8,7 @@ Pipfile.lock
 
 envfile/
 !envfile/env.example.yml
+
+src/webBox/static/
+vmfile/helm-webServer/
 

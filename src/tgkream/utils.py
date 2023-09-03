@@ -88,3 +88,37 @@ def TgDefaultInit(TgClass, *args, **kwargs):
         *args, **kwargs
     )
 
+# async def getPeerTypeName(self, peer: TgTypeing.AutoInputPeer) -> str:
+    # if type(peer) == str:
+        # client = self.pickCurrentClient()['client']
+        # inputPeer = await client.get_entity(peer)
+    # else:
+        # inputPeer = peer
+
+    # inputPeerType = type(inputPeer)
+    # if inputPeerType == telethon.types.Chat:
+        # inputPeerTypeName = 'Chat'
+    # elif inputPeerType == telethon.types.User:
+        # inputPeerTypeName = 'User'
+    # elif inputPeerType == telethon.types.Channel:
+        # inputPeerTypeName = 'Channel'
+
+    # return inputPeerTypeName
+
+
+# async def guyInfo(client: telethon.TelegramClient, peer: str) -> dict:
+    # inputEntity = await client.get_input_entity(peer)
+
+    # peerTarget = ''
+    # inputEntityType = type(inputEntity)
+    # if inputEntityType == telethon.types.InputPeerChat:
+        # peerTarget = 'Chat'
+    # elif inputEntityType == telethon.types.InputPeerUser:
+        # peerTarget = 'User'
+    # elif inputEntityType == telethon.types.InputPeerChannel:
+        # peerTarget = 'Channel'
+
+    # return {
+        # 'userId': inputEntityType.id
+    # }
+

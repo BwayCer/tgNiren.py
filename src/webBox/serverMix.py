@@ -67,7 +67,7 @@ def enableTool(*args):
 
 
 class _InnerSession():
-    def __init__(self, extensionHours: float = 6):
+    def __init__(self, extensionHours: float = 0.06):
         self._cache = novice.CacheData(extensionHours = extensionHours)
 
     def open(self, pageSession: dict) -> str:
@@ -90,7 +90,7 @@ class _InnerSession():
         return _cache.get(pageId)['data']
 
 def _InnerSession_expiredCheckLoop(innerSession: _InnerSession):
-    @novice.dSetTimeout(intervalSec = 3600 * 3)
+    @novice.dSetTimeout(intervalSec = 3600 * 3 * 0.01)
     def expiredCheck():
         _cache = innerSession._cache
         if _cache.size() == 0:
@@ -106,7 +106,7 @@ def _InnerSession_expiredCheckLoop(innerSession: _InnerSession):
 
 
 class _WsHouse():
-    def __init__(self, extensionHours: float = 2):
+    def __init__(self, extensionHours: float = 0.02):
         self.channelCache = novice.CacheData(extensionHours = extensionHours)
         self.roomCache = novice.CacheData()
 
@@ -194,4 +194,35 @@ class _WsHouse():
                         novice.sysTracebackException()
                     )
                 )
+
+class _WsHouse2():
+    def __init__(self):
+        self.house = {}
+
+    def open(self, roomName: str, socket) -> None:
+        house = self.house
+        if roomName in house:
+            connectedSockets = house[roomName]
+        else:
+            connectedSockets = house[roomName] = set()
+        connectedSockets.add(socket)
+
+    def close(self, roomName: str, socket) -> None:
+        house = self.house
+        if roomName in house:
+            connectedSockets = house[roomName]
+            if len(connectedSockets) > 1:
+                connectedSockets.remove(socket)
+            else:
+                del house[roomName]
+
+    def connectLength(self, roomName: str) -> None:
+        house = self.house
+        return len(house[roomName]) if roomName in house else 0
+
+    async def send(self, roomName: str, payload: typing.Any) -> None:
+        house = self.house
+        if roomName in house:
+            for socket in house[roomName]:
+                await socket.send(payload)
 

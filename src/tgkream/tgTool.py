@@ -206,6 +206,10 @@ class _TgNiUsers():
         if not clientCount > 0:
             return
 
+        task = asyncio.current_task()
+        taskName = task.get_name()
+        print('-> {}: {}'.format(task.get_name(), task.get_coro()))
+
         chanDataNiUsers = self.chanDataNiUsers
         usablePhones = chanDataNiUsers.getUsablePhones()
         usablePhonesLength = len(usablePhones)
@@ -293,6 +297,7 @@ class _TgNiUsers():
             self._apiHash
         )
         try:
+            print('_login +' + phoneNumber)
             await client.connect()
         except Exception as err:
             print('{} Error: {}', type(err), err)

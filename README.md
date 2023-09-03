@@ -33,6 +33,8 @@ devtool_tgNiren pipenv run ./src/webServer.py
 
 
 ```
+pipenv install --dev
+
 # 查看命令
 ./src/tool.py --router
 ```

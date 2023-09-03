@@ -146,7 +146,7 @@ def _removeWsProxy(pageId: str, wsId: str):
 #   2. 當 websocket 持續時間被延長的同時也必須延長 session 的持續時間。
 # 安全起見，將 session 延長時間設為 websocket 過期檢查時間與 websocket 延長時間的三倍。
 def _wsExpiredCheckLoop():
-    @novice.dSetTimeout(intervalSec = 3600 * 2)
+    @novice.dSetTimeout(intervalSec = 3600 * 2 * 0.01)
     async def expiredCheck():
         channelCache = serverMix.wsHouse.channelCache
         if channelCache.size() == 0:

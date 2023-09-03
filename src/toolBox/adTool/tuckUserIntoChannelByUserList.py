@@ -2,8 +2,11 @@
 
 
 import typing
+import os
+import re
 import asyncio
 import utils.novice as novice
+import utils.json
 from tgkream.tgTool import knownError, telethon, TgDefaultInit, TgBaseTool
 
 
@@ -15,17 +18,33 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
         raise ValueError('Usage: <usableClientCount> <userPeers> <toGroupPeer>')
 
     usableClientCount = int(args[1])
-    userPeersTxt = args[2]
+    # userPeersTxt = args[2]
     toGroupPeer = args[3]
 
-    userPeers = userPeersTxt.split(',')
+    userIdsJsonFilePath = args[2]
+    phoneNumber = args[4]
+    if not os.path.exists(userIdsJsonFilePath):
+        raise ValueError('找不到 "{}" 用戶清單文件路徑'.format(userIdsJsonFilePath))
+    userPeers = utils.json.load(userIdsJsonFilePath)
+
+
+    # userPeers = userPeersTxt.split(',')
 
     tgTool = TgDefaultInit(
         TgBaseTool,
         clientCount = usableClientCount,
         papaPhone = novice.py_env['papaPhoneNumber']
     )
-    await tgTool.init()
+    # await tgTool.init()
+    client = await tgTool.login(phoneNumber)
+    myInfo = await client.get_me()
+    print('--> I\'m {} {} ({}) and my phone is +{}.'.format(
+        str(myInfo.first_name),
+        str(myInfo.last_name),
+        str(myInfo.username),
+        myInfo.phone,
+    ))
+
 
     print('-> 拉人入群')
     tuckUserIdx = 0
@@ -33,14 +52,14 @@ async def asyncRun(args: list, _dirpy: str, _dirname: str):
     pickNiUserList = []
     bandNiUserList = []
     pickUserInfos = {}
-    async for clientInfo in tgTool.iterPickClient(-1, 15):
+    async for clientInfo in tgTool.iterPickClient(-1, 3):
         myId = clientInfo['id']
         client = clientInfo['client']
 
         if novice.indexOf(bandNiUserList, myId) != -1:
             if len(bandNiUserList) == usableClientCount:
                 errMsg = '[tuckUserIntoChannel]: 彷用戶們已盡力'
-                logNeedle.push(errMsg)
+                novice.logNeedle.push(errMsg)
                 raise Exception(errMsg)
             continue
 
